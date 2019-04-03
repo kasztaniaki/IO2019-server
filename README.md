@@ -1,11 +1,15 @@
 # IO2019
-Virtual Machine manager 
+Virtual Machine manager for Software Engineering classes (IET 2019).
 
 
-IDE: PyCharm Professional 2018.3
+Developement configuration:
 
-Interpreter: Virtualenv python 3.7
+Conda:
+    Install Miniconda for your OS (linux/macOS) with 3.7 Python:
+        https://docs.conda.io/en/latest/miniconda.html
 
-Microframework: Flask 1.0.2
+    Create your Conda environment with command:
+        conda env create -f environment.yml
 
-Frontend: Vue.js 2.6.10
+    To activate enviroment in terminal type:
+        conda activate IO2019
