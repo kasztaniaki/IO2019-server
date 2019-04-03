@@ -1,7 +1,7 @@
 language: python
 matrix:
   include:
-    - python: 3.7
+    - python: 3.6
       env: FLASK=1.0.2 PYLINT=2.3 PYMYSQL=0.9.3
 os: linux
 
