@@ -23,4 +23,4 @@ install:
 
 script:
   - py.test
-  - pylint *.py
+  - pylint tests/*.py
