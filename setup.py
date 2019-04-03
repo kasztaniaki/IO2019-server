@@ -2,8 +2,8 @@ from setuptools import setup, find_packages
 PACKAGES = find_packages()
 
 opts = dict(name="IO2019",
-            maintainer="Jakub Posłuszny",
-            maintainer_email="revanjjp@gmail.com",
+            maintainer="revanjjp",
+            maintainer_email="nick@email.com",
             description="Virtual Machine manager",
             long_description="Virtual Machine manager for Software Engineering classes (IET 2019)",
             url="https://github.com/kasztaniaki/IO2019",
