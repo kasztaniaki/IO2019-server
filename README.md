@@ -11,5 +11,20 @@ Conda:
     Create your Conda environment with command:
         conda env create -f environment.yml
 
-    To activate enviroment in terminal type:
-        conda activate IO2019
+    To activate environment in terminal type:
+        conda activate IO2019-server #macOS
+        source activate IO2019-server #linux
+
+    *Remember to activate your environment every time!*
+
+PyCharm:
+    While configuring PyCharm project remeber to set your environment as conda
+    Your interpreter should be the same as your environment interpreter
+
+To run app: 
+    python app.py
+
+To run tests: 
+    py.test
+
+

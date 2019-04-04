@@ -1,4 +1,4 @@
-name: IO2019
+name: IO2019-server
 channels:
   - defaults
 dependencies:
