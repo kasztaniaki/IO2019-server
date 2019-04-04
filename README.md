@@ -22,9 +22,10 @@ PyCharm:
     Your interpreter should be the same as your environment interpreter
 
 To run app: 
-    python app.py
+        python app.py
 
 To run tests: 
-    py.test
+        py.test
 
-
+To run python formatter for directory:
+        black $DIR
