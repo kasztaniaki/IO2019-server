@@ -5,6 +5,9 @@ matrix:
       env: FLASK=1.0.2 PYLINT=2.3 PYMYSQL=0.9.3 PYTEST=4.3
 os: linux
 
+notifications:
+  slack: io-2019:AfyyW6KZ9KiCOlsLt1Bi0tPZ
+
 before_install:
   - wget https://repo.continuum.io/miniconda/Miniconda3-3.7.0-Linux-x86_64.sh -O ~/miniconda.sh
   - bash ~/miniconda.sh -b -p $HOME/miniconda
