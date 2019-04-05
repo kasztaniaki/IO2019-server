@@ -6,7 +6,7 @@ dependencies:
   - flask=1.0.2
   - jinja2>=2.10
   - pylint>=2.3.1
-  - pymysql=0.9.3
-  - pytest=4.3.1
+  - pytest>=4.3.1
   - python=3.6.8
   - black>=19.3b0  
+  - sqlite>=3.27
