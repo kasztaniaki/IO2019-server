@@ -6,7 +6,7 @@ class Pool(db.Model):
     display_name = db.Column(db.String(150), unique=True, nullable=False)
     available_count = db.Column(db.Integer)
     enabled = db.Column(db.Boolean)
-    description = db.Column(db.String(500), unique=True, nullable=False)
+    environment = db.Column(db.String(500), unique=True, nullable=False)
     OS = db.Column(db.String(150), unique=True, nullable=False)
 
     def __init__(self):
