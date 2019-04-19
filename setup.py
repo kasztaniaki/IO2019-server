@@ -16,4 +16,4 @@ opts = dict(
 
 
 if __name__ == "__main__":
-    setup(**opts)
+    setup(**opts, install_requires=['flask'])
