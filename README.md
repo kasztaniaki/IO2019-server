@@ -3,15 +3,17 @@ Virtual Machine manager for Software Engineering classes (IET 2019).
 
 Used techonogy:
     
-    - Miniconda
-    - Python
-    - Flask
-    - Black (code formatter)
+    Miniconda
+    Python
+    Flask
+    Black (code formatter)
 
 
-Developement configuration:
+Conda update:
+    
+    conda env update --name IO2019-server -f=environment.yml
 
-Conda:
+Conda setup:
     
     Install Miniconda for your OS (linux/macOS) with 3.7 Python:
         https://docs.conda.io/en/latest/miniconda.html
