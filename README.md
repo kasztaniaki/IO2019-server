@@ -9,9 +9,13 @@ Used techonogy:
     Black (code formatter)
 
 
-Conda update:
+Conda environment update:
     
     conda env update --name IO2019-server -f=environment.yml
+    
+Conda update:
+
+    conda update -y -n base -c defaults conda
 
 Conda setup:
     
@@ -24,11 +28,8 @@ Conda setup:
     To activate environment in terminal type:
         conda activate IO2019-server #macOS
         source activate IO2019-server #linux
-
-    Update your environment with running the script: (update ONLY for "I02019-server" environment)
-        ./update.sh
     
-    *Remember to activate your environment every time before work!*
+    Remember to activate your environment every time before work in terminal!
     
     
 
