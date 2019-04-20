@@ -1,10 +1,7 @@
-from flask import Flask
-from config import Config
-from flask_sqlalchemy import SQLAlchemy
-from flask_migrate import Migrate
+from flask import Flask, jsonify
 
-
-app = Flask(__name__)
+from database.dbmodel import Pool
+from settings import app
 
 
 @app.route("/")
@@ -12,8 +9,10 @@ def hello_world():
     return "Hello World!"
 
 
+@app.route('/pools', methods=['GET'])
+def get_pools():
+    return jsonify({'pools': Pool.get_pools()})
+
+
 if __name__ == "__main__":
-    app.config.from_object(Config)
-    db = SQLAlchemy(app)
-    migrate = Migrate(app, db)
     app.run()
