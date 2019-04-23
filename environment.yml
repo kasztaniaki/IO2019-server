@@ -11,3 +11,5 @@ dependencies:
   - black>=19.3b0
   - sqlite>=3.27
   - flask-sqlalchemy>=2.3.1
+  - flask-cors>=3.0
+  - sqlalchemy>=1.3

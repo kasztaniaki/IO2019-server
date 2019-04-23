@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import jsonify, request, redirect
 
 from database.dbmodel import Pool
 from settings import app
@@ -11,7 +11,16 @@ def hello_world():
 
 @app.route('/pools', methods=['GET'])
 def get_pools():
-    return jsonify({'pools': Pool.get_pools()})
+    return jsonify({'pools': Pool.get_detailed_pools()})
+
+
+@app.route('/import', methods=['POST'])
+def import_pools():
+    print(request.files)
+    if 'pools_csv' not in request.files:
+            return redirect(request.url)
+    file = request.files['pools_csv']
+    print(file)
 
 
 if __name__ == "__main__":

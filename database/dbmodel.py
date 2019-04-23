@@ -1,9 +1,11 @@
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import CheckConstraint
 import json
 from settings import app
 
 
 db = SQLAlchemy(app)
+
 
 class Pool(db.Model):
     __tablename__ = 'Pools'
@@ -12,16 +14,21 @@ class Pool(db.Model):
     DisplayName = db.Column(db.String(80), nullable=False)
     MaximumCount = db.Column(db.Integer)
     Description = db.Column(db.String(80))
+    Enabled = db.Column(db.Integer)
     InstalledSoftware = db.relationship('InstalledSoftware', backref='owner')
     OSID = db.Column(db.Integer, db.ForeignKey('OperatingSystems.OSID'))
+    __table_args__ = (
+        CheckConstraint(Enabled >= 0, Enabled <= 1),
+        {})
 
     def json(self):
-        return {'PoolIP':self.Name, 'Name': self.DisplayName, 'MaximumCount': self.MaximumCount, 'Description': self.Description}
+        return {'PoolID': self.Name, 'Name': self.DisplayName, 'MaximumCount': self.MaximumCount,
+                'Description': self.Description}
 
     @staticmethod
     def json_detailed(query):
-        return {'PoolID': query[0], 'DisplayName': query[1], 'Maximum Count': query[2], 'Description': query[3],
-                'OSName': query[4], 'OSVersion': query[5], 'InstalledSoftware': query[6], 'SoftwareVersion': query[7]}
+        return {'PoolID': query[0], 'DisplayName': query[1], 'Maximum Count': query[2], 'Enabled': query[3],
+                'OSName': query[4], 'OSVersion': query[5], 'InstalledSoftware': [query[6], query[7]]}
 
     @staticmethod
     def add_pool( _name, _maximumcount, _description, other):
@@ -33,8 +40,8 @@ class Pool(db.Model):
     @staticmethod
     def add_detailed_pool( _pool_name,_pool_display_name,_pool_maximumcount, _pool_description, _so_name, _so_language, _so_version, _soft_name, _soft_version):
         new_soft = InstalledSoftware(Name=_soft_name, Version=_soft_version)
-        new_pool = Pool(Name=_pool_name,DisplayName=_pool_display_name, MaximumCount=_pool_maximumcount, Description=_pool_description,
-                                            InstalledSoftware =[new_soft])
+        new_pool = Pool(Name=_pool_name, DisplayName=_pool_display_name, MaximumCount=_pool_maximumcount, Description=_pool_description,
+                        InstalledSoftware =[new_soft])
         new_operating_system = OpereratingSystem(Name=_so_name, Language=_so_language, Version=_so_version, PoolList=[new_pool])
         db.session.add(new_operating_system)
         db.session.commit()
@@ -46,16 +53,9 @@ class Pool(db.Model):
 
     @staticmethod
     def get_detailed_pools():
-        return [Pool.json_detailed(pool) for pool in db.session.query(Pool.Name, Pool.DisplayName, Pool.MaximumCount, Pool.Description,OpereratingSystem.Name, OpereratingSystem.Version, InstalledSoftware.Name, InstalledSoftware.Version).join(InstalledSoftware, Pool.PoolID==InstalledSoftware.PoolID).\
-    join(OpereratingSystem, Pool.OSID==OpereratingSystem.OSID).all()]
+        return [Pool.json_detailed(pool) for pool in db.session.query(Pool.Name, Pool.DisplayName, Pool.MaximumCount, Pool.Enabled, OpereratingSystem.Name, OpereratingSystem.Version, InstalledSoftware.Name, InstalledSoftware.Version).join(InstalledSoftware, Pool.PoolID==InstalledSoftware.PoolID).\
+    join(OpereratingSystem, Pool.OSID == OpereratingSystem.OSID).all()]
 
-    @staticmethod
-    def get_all_pools_by_name(name):
-        return [Pool.json(pool) for pool in Pool.query.filter(Pool.Name == 'alamakota').all()]
-
-    @staticmethod
-    def get_all_id():
-        return [Pool.json(pool) for pool in Pool.query.filter(Pool.Name == 'alamakota').all()]
 
     def __repr__(self):
         pool_object = {
