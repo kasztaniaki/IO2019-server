@@ -20,7 +20,8 @@ def import_pools():
     if 'pools_csv' not in request.files:
             return redirect(request.url)
     file = request.files['pools_csv']
-    print(file)
+    # print(file)
+    return "file_received"
 
 
 if __name__ == "__main__":
