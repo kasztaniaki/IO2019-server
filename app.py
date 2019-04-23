@@ -11,7 +11,7 @@ def hello_world():
 
 @app.route('/pools', methods=['GET'])
 def get_pools():
-    return jsonify({'pools': Pool.get_detailed_pools()})
+    return jsonify({'pools': Pool.get_pools()})
 
 
 @app.route('/import', methods=['POST'])
