@@ -23,7 +23,7 @@ class Parser:
                 pool_description = ""
                 os_language = "PL/EN"
                 os_version = ""
-                row[4].replace("oraz ", ",")
+                row[4].replace(" oraz ", ",")
                 row[4].replace(" i ", ",")
                 raw_software_list = row[4].split(",")
 
