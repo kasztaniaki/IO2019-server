@@ -10,18 +10,16 @@ class Parser:
     def parse_file(self):
         csv_string = str(self.file.read(), "utf-8")
         csv_reader = csv.reader(csv_string.split("\n"), delimiter=",")
-        line_count = 0
 
+        next(csv_reader)
         for row in csv_reader:
-            if line_count == 0:
-                line_count += 1
-            else:
+            if len(row) > 0:
                 pool_name = row[0]
 
                 os_start = row[1].find("(")
                 os_end = row[1].find(")")
 
-                # chcecking if OS name is provided in
+                # checking if OS name is provided in
                 if os_start < 0 or os_end < 0:
                     os_name = " - "
                     pool_display_name = row[1]
@@ -29,7 +27,7 @@ class Parser:
                     os_name = row[1][os_start + 1 : os_end]
                     pool_display_name = row[1][0 : os_start - 1]
 
-                pool_maximumcount = row[2]
+                pool_maximum_count = row[2]
                 enabled = row[3]
                 pool_description = ""
                 os_language = "PL/EN"
@@ -38,7 +36,7 @@ class Parser:
                 pool_id = Pool.add_pool(
                     pool_name,
                     pool_display_name,
-                    pool_maximumcount,
+                    pool_maximum_count,
                     os_name,
                     pool_description,
                     enabled,
@@ -65,9 +63,10 @@ class Parser:
 
                         if len(software_version) > 10:
                             software_version = " - "
-                            
+
                         InstalledSoftware.add_software_to_pool(
                             pool_id, software_name, software_version
                         )
-                # Pool.set_pool_description(pool_id, pool_description) - brak metody
+
+                # Pool.set_pool_description(pool_id, pool_description) - no implementation
         return 0
