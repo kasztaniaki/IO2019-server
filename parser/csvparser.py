@@ -41,6 +41,7 @@ class Parser:
                     pool_maximumcount,
                     os_name,
                     pool_description,
+                    enabled,
                 )
 
                 if pool_id < 0:

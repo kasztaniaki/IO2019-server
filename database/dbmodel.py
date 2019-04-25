@@ -34,12 +34,13 @@ class Pool(db.Model):
         }
 
     @staticmethod
-    def add_pool(_name, _display_name, _maximumcount, os_name, _description):
+    def add_pool(_name, _display_name, _maximumcount, os_name, _description, _enabled):
         new_pool = Pool(
             Name=_name,
             DisplayName=_display_name,
             MaximumCount=_maximumcount,
             Description=_description,
+            Enabled= 1 if (_enabled == "true") else 0,
         )
         db.session.add(new_pool)
         db.session.commit()
