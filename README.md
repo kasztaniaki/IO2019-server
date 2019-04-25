@@ -3,15 +3,21 @@ Virtual Machine manager for Software Engineering classes (IET 2019).
 
 Used techonogy:
     
-    - Miniconda
-    - Python
-    - Flask
-    - Black (code formatter)
+    Miniconda
+    Python
+    Flask
+    Black (code formatter)
 
 
-Developement configuration:
+Conda environment update:
+    
+    conda env update --name IO2019-server -f=environment.yml
+    
+Conda update:
 
-Conda:
+    conda update -y -n base -c defaults conda
+
+Conda setup:
     
     Install Miniconda for your OS (linux/macOS) with 3.7 Python:
         https://docs.conda.io/en/latest/miniconda.html
@@ -22,11 +28,8 @@ Conda:
     To activate environment in terminal type:
         conda activate IO2019-server #macOS
         source activate IO2019-server #linux
-
-    Update your environment with running the script: (update ONLY for "I02019-server" environment)
-        ./update.sh
     
-    *Remember to activate your environment every time before work!*
+    Remember to activate your environment every time before work in terminal!
     
     
 
