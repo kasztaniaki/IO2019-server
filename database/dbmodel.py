@@ -48,35 +48,6 @@ class Pool(db.Model):
         return new_pool.PoolID
 
     @staticmethod
-    def add_detailed_pool(
-        _pool_name,
-        _pool_display_name,
-        _pool_maximumcount,
-        _pool_description,
-        _so_name,
-        _so_language,
-        _so_version,
-        _soft_name,
-        _soft_version,
-    ):
-        new_soft = InstalledSoftware(Name=_soft_name, Version=_soft_version)
-        new_pool = Pool(
-            Name=_pool_name,
-            DisplayName=_pool_display_name,
-            MaximumCount=_pool_maximumcount,
-            Description=_pool_description,
-            InstalledSoftware=[new_soft],
-        )
-        new_operating_system = OperatingSystem(
-            Name=_so_name,
-            Language=_so_language,
-            Version=_so_version,
-            PoolList=[new_pool],
-        )
-        db.session.add(new_operating_system)
-        db.session.commit()
-
-    @staticmethod
     def get_pools():
         return [Pool.json(pool) for pool in Pool.query.all()]
 
@@ -135,7 +106,7 @@ class OperatingSystem(db.Model):
         return new_operating_system.OSID
 
     @staticmethod
-    def add_os_to_pool(_poolID, _OSID):
-        pool = Pool.query.filter(Pool.PoolID == _poolID).first()
-        pool.OSID = _OSID
+    def add_os_to_pool(poolID, osID):
+        pool = Pool.query.filter(Pool.PoolID == poolID).first()
+        pool.OSID = osID
         db.session.commit()
