@@ -17,7 +17,7 @@ def get_pools():
 
 @app.route("/import", methods=["POST"])
 def import_pools():
-    print(request.files)
+    # print(request.files)
     if "pools_csv" not in request.files:
         return redirect(request.url)
     file = request.files["pools_csv"]
