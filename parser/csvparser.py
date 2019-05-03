@@ -11,7 +11,7 @@ class Parser:
         csv_string = str(self.file.read(), "utf-8")
         csv_reader = csv.reader(csv_string.split("\n"), delimiter=",")
 
-        # next(csv_reader)
+        next(csv_reader)
         for row in csv_reader:
             if len(row) > 0:
                 pool_name = row[0]
