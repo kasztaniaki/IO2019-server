@@ -120,7 +120,100 @@ class Pool(db.Model):
             "MaximumCount": self.MaximumCount,
         }
         return json.dumps(pool_object)
-    
+
+
+class User(db.Model):
+    __tablename__ = "User"
+
+    ID = db.Column(db.Integer, primary_key=True)
+    Email = db.Column(db.String(80), nullable=False, unique=True)
+    Password = db.Column(db.String(80))
+    Name = db.Column(db.String(80))
+    Surname = db.Column(db.String(80))
+    IsAdmin = db.Column(db.Boolean)
+
+    @staticmethod
+    def get_user(user_id):
+        return User.query.filter(User.ID == user_id).first()
+
+    @staticmethod
+    def add_user(email, password, name, surname, is_admin=False):
+        try:
+            user = User(
+                Email=email,
+                Password=password,
+                Name=name,
+                Surname=surname,
+                IsAdmin=is_admin,
+            )
+            db.session.add(user)
+            db.session.commit()
+        except sa_exc.IntegrityError:
+            print("User with email: '" + user.Email + "' already exists")
+        return user
+
+    def set_email(self, email):
+        if email != self.Email:
+            try:
+                self.Email = email
+                db.session.commit()
+            except sa_exc.IntegrityError:
+                print("Email: '" + self.Email + "' already exists in database")
+
+    def set_password(self, password):
+        if password != self.Password:
+            self.Password = password
+            db.session.commit()
+
+    def set_name(self, name):
+        if name != self.Name:
+            self.Name = name
+            db.session.commit()
+
+    def set_surname(self, surname):
+        if surname != self.Surname:
+            self.Surname = surname
+            db.session.commit()
+
+    def give_admin_permissions(self):
+        if self.IsAdmin is True:
+            print("User: '" + self.ID + "' already is an admin")
+        else:
+            self.IsAdmin = True
+            db.session.commit()
+
+    def remove_admin_permissions(self):
+        if self.IsAdmin is False:
+            print("User: '" + self.ID + "' isn't admin")
+        else:
+            self.IsAdmin = False
+            db.session.commit()
+
+    def check_password(self, password):
+        if self.Password == password:
+            return True
+        else:
+            return False
+
+    def json(self):
+        return {
+            "ID": self.ID,
+            "Email": self.Email,
+            "Name": self.Name,
+            "Surname": self.Surname,
+            "IsAdmin": self.IsAdmin
+        }
+
+    def __repr__(self):
+        user_object = {
+            "ID": self.ID,
+            "Email": self.Email,
+            "Name": self.Name,
+            "Surname": self.Surname,
+            "IsAdmin": self.IsAdmin
+        }
+        return json.dumps(user_object)
+
 
 class Software(db.Model):
     __tablename__ = "Software"
