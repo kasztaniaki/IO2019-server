@@ -1,6 +1,6 @@
 import csv
 
-from database.dbmodel import Pool, InstalledSoftware
+from database.dbmodel import Pool, Software
 
 
 class Parser:
@@ -32,20 +32,19 @@ class Parser:
                 os_language = "PL/EN"
                 os_version = ""
 
-                pool_id = Pool.add_pool(
-                    pool_name,
-                    pool_display_name,
-                    pool_maximum_count,
-                    os_name,
-                    pool_description,
-                    enabled,
-                )
+                # pool_id = Pool.add_pool(
+                #     pool_name,
+                #     pool_display_name,
+                #     pool_maximum_count,
+                #     os_name,
+                #     pool_description,
+                #     enabled,
+                # )
 
-                if pool_id < 0:
-                    return -1
+                # if pool_id < 0:
+                #     return -1
 
                 raw_software_list = row[4].split(",")
-
 
                 for line in raw_software_list:
                     soft_ver_start = line.find("(")
@@ -53,8 +52,8 @@ class Parser:
                     if soft_ver_start < 0 or soft_ver_end < 0:
                         if len(line) > 20:
                             pool_description = pool_description + " | " + line
-                        else:
-                            InstalledSoftware.add_software_to_pool(pool_id, line, " - ")
+                        # else:
+                            # Software.add_software_to_pool(pool_id, line, " - ")
                     else:
                         software_name = line[0 : soft_ver_start - 1].strip()
                         software_version = line[
@@ -64,8 +63,8 @@ class Parser:
                         if len(software_version) > 10:
                             software_version = " - "
 
-                        InstalledSoftware.add_software_to_pool(
-                            pool_id, software_name, software_version
-                        )
+                        # Software.add_software_to_pool(
+                        #     pool_id, software_name, software_version
+                        # )
                 # Pool.set_pool_description(pool_id, pool_description) - no implementation
         return 0

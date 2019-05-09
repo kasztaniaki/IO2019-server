@@ -3,111 +3,180 @@ from sqlalchemy import CheckConstraint
 import json
 from settings import app
 
-
 db = SQLAlchemy(app)
 
 
+class SoftwareList(db.Model):
+    __tablename__ = "SoftwareList"
+
+    PoolID = db.Column(db.Integer, db.ForeignKey("Pool.ID"), primary_key=True)
+    SoftwareID = db.Column(db.Integer, db.ForeignKey("Software.ID"), primary_key=True)
+    Version = db.Column(db.String(80), primary_key=True)
+    Software = db.relationship("Software")
+
+
 class Pool(db.Model):
-    __tablename__ = "Pools"
-    PoolID = db.Column(db.Integer, primary_key=True)
+    __tablename__ = "Pool"
+
+    ID = db.Column(db.String(80), primary_key=True)
     Name = db.Column(db.String(80), nullable=False)
-    DisplayName = db.Column(db.String(80), nullable=False)
     MaximumCount = db.Column(db.Integer)
     Description = db.Column(db.String(80))
     Enabled = db.Column(db.Integer)
-    InstalledSoftware = db.relationship("InstalledSoftware", backref="owner")
-    OSID = db.Column(db.Integer, db.ForeignKey("OperatingSystems.OSID"))
-    __table_args__ = (CheckConstraint(Enabled >= 0, Enabled <= 1), {})
+    OSID = db.Column(db.Integer, db.ForeignKey("OperatingSystem.ID"))
+    Software = db.relationship("SoftwareList")
+    __table_args__ = (CheckConstraint("Enabled >= 0", "Enabled <= 1"), {})
+
+    @staticmethod
+    def get_pool(pool_id):
+        return Pool.query.filter(Pool.ID == pool_id).first()
+
+    @staticmethod
+    def add_pool(pool_id, name, maximum_count, description, enabled):
+        pool = Pool.query.filter(
+            Pool.ID == pool_id,
+            Pool.Name == name,
+            Pool.MaximumCount == maximum_count,
+            Pool.Description == description,
+            Pool.Enabled == enabled
+        ).first()
+
+        if pool is None:
+            # Try section for same ID error needed
+            pool = Pool(
+                ID=pool_id,
+                Name=name,
+                MaximumCount=maximum_count,
+                Description=description,
+                Enabled=1 if (enabled == "true") else 0,
+            )
+            db.session.add(pool)
+            db.session.commit()
+        else:
+            print("Pool 'ID:" + pool.ID + " Name:" + pool.Name + "' already exists")
+        return pool
+
+    def get_software_list(self, software=None):
+        if software is None:
+            return SoftwareList.query.filter(
+                SoftwareList.PoolID == self.ID
+            ).with_entities(Software.ID, Software.Name, SoftwareList.Version).join(Software).all()
+        else:
+            return SoftwareList.query.filter(
+                SoftwareList.PoolID == self.ID,
+                SoftwareList.SoftwareID == software.ID
+            ).with_entities(Software.ID, Software.Name, SoftwareList.Version).join(Software).all()
+
+    def add_software(self, software, version=""):
+        installed_software = SoftwareList.query.filter(
+            SoftwareList.PoolID == self.ID, SoftwareList.SoftwareID == software.ID, SoftwareList.Version == version
+        ).first()
+
+        if installed_software is None:
+            installed_software = SoftwareList(
+                PoolID=self.ID,
+                SoftwareID=software.ID,
+                Version=version
+            )
+            db.session.add(installed_software)
+            db.session.commit()
+        else:
+            print("Software '" + software.Name + "' already installed")
+
+    def remove_software(self, software, version=None):
+        if version is None:
+            SoftwareList.query.filter(
+                SoftwareList.PoolID == self.ID,
+                SoftwareList.SoftwareID == software.ID
+            ).delete()
+        else:
+            SoftwareList.query.filter(
+                SoftwareList.PoolID == self.ID,
+                SoftwareList.SoftwareID == software.ID,
+                SoftwareList.Version == version
+            ).delete()
+        db.session.commit()
+
+    def update_software(self, software, old_version, new_version):
+        if old_version != new_version:
+            self.add_software(software, new_version)
+            self.remove_software(software, old_version)
+            db.session.commit()
+
+    def get_operating_system(self):
+        return OperatingSystem.query.filter(OperatingSystem.ID == self.OSID).first()
+
+    def set_operating_system(self, operating_system):
+        self.OSID = operating_system.ID
+        db.session.commit()
+
+    @staticmethod
+    def get_table():
+        return [Pool.json(pool) for pool in Pool.query.all()]
 
     def json(self):
-        OS = OperatingSystem.query.filter(OperatingSystem.OSID == self.OSID).all()[0]
         return {
-            "PoolID": self.Name,
-            "DisplayName": self.DisplayName,
+            "ID": self.ID,
+            "Name": self.Name,
             "MaximumCount": self.MaximumCount,
             "Enabled": self.Enabled,
-            "OSName": OS.Name,
-            "OSVersion": OS.Version,
+            "OSName": self.get_operating_system().Name,
             "InstalledSoftware": [
-                (software.Name, software.Version) for software in self.InstalledSoftware
+                (software.Name, software.Version) for software in self.get_software_list()
             ],
         }
 
-    @staticmethod
-    def add_pool(_name, _display_name, _maximumcount, os_name, _description, _enabled):
-        new_pool = Pool(
-            Name=_name,
-            DisplayName=_display_name,
-            MaximumCount=_maximumcount,
-            Description=_description,
-            Enabled= 1 if (_enabled == "true") else 0,
-        )
-        db.session.add(new_pool)
-        db.session.commit()
-        os_id = OperatingSystem.add_operating_system(os_name, "PL/EN", "1.0")
-        OperatingSystem.add_os_to_pool(new_pool.PoolID, os_id)
-        return new_pool.PoolID
-
-    @staticmethod
-    def get_pools():
-        return [Pool.json(pool) for pool in Pool.query.all()]
-
     def __repr__(self):
         pool_object = {
+            "ID": self.ID,
             "Name": self.Name,
-            "Maximumcount": self.MaximumCount,
-            "Description": self.Description,
+            "MaximumCount": self.MaximumCount,
         }
-        return json.dump(pool_object)
+        return json.dumps(pool_object)
 
 
-class InstalledSoftware(db.Model):
-    __tablename__ = "InstalledSoftwares"
+class Software(db.Model):
+    __tablename__ = "Software"
 
-    SoftwareID = db.Column(db.Integer, primary_key=True)
+    ID = db.Column(db.Integer, primary_key=True)
     Name = db.Column(db.String)
-    Version = db.Column(db.String)
-    PoolID = db.Column(db.Integer, db.ForeignKey("Pools.PoolID"))
 
     @staticmethod
-    def add_software_to_pool(_poolid, _soft_name, _soft_version):
-        new_installed = InstalledSoftware(
-            PoolID=_poolid, Name=_soft_name, Version=_soft_version
-        )
-        db.session.add(new_installed)
-        db.session.commit()
-
-    def json(self):
-        return {
-            "SoftwareID": self.SoftwareID,
-            "Name": self.Name,
-            "Version": self.Version,
-        }
+    def get_software(software_id):
+        return Software.query.filter(Software.ID == software_id).first()
 
     @staticmethod
-    def get_softwares():
-        return [InstalledSoftware.json(soft) for soft in InstalledSoftware.query.all()]
+    def add_software(software_name):
+        software = Software.query.filter(Software.Name == software_name).first()
+
+        if software is None:
+            software = Software(Name=software_name)
+            db.session.add(software)
+            db.session.commit()
+        else:
+            print("Software '" + software.Name + "' already exists")
+
+        return software
 
 
 class OperatingSystem(db.Model):
-    __tablename__ = "OperatingSystems"
-    OSID = db.Column(db.Integer, primary_key=True)
+    __tablename__ = "OperatingSystem"
+    ID = db.Column(db.Integer, primary_key=True)
     Name = db.Column(db.String(80), nullable=False)
-    Language = db.Column(db.String(80), nullable=False)
-    Version = db.Column(db.String(80), nullable=False)
     PoolList = db.relationship("Pool", backref="owner")
 
     @staticmethod
-    def add_operating_system(_name, _language, _version):
-        new_operating_system = OperatingSystem(
-            Name=_name, Language=_language, Version=_version
-        )
-        db.session.add(new_operating_system)
-        db.session.commit()
-        return new_operating_system.OSID
+    def get_operating_system(os_id):
+        return OperatingSystem.query.filter(OperatingSystem.ID == os_id).first()
 
     @staticmethod
-    def add_os_to_pool(poolID, osID):
-        pool = Pool.query.filter(Pool.PoolID == poolID).first()
-        pool.OSID = osID
-        db.session.commit()
+    def add_operating_system(name):
+        operating_system = OperatingSystem.query.filter(OperatingSystem.Name == name).first()
+
+        if operating_system is None:
+            operating_system = OperatingSystem(Name=name)
+            db.session.add(operating_system)
+            db.session.commit()
+        else:
+            print("Operating System '" + operating_system.Name + "' already exists")
+        return operating_system
