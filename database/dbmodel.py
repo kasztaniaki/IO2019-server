@@ -1,5 +1,5 @@
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import CheckConstraint
+from sqlalchemy import CheckConstraint, exc as sa_exc
 import json
 from settings import app
 
@@ -22,10 +22,9 @@ class Pool(db.Model):
     Name = db.Column(db.String(80), nullable=False)
     MaximumCount = db.Column(db.Integer)
     Description = db.Column(db.String(80))
-    Enabled = db.Column(db.Integer)
+    Enabled = db.Column(db.Boolean)
     OSID = db.Column(db.Integer, db.ForeignKey("OperatingSystem.ID"))
     Software = db.relationship("SoftwareList")
-    __table_args__ = (CheckConstraint("Enabled >= 0", "Enabled <= 1"), {})
 
     @staticmethod
     def get_pool(pool_id):
@@ -33,27 +32,19 @@ class Pool(db.Model):
 
     @staticmethod
     def add_pool(pool_id, name, maximum_count, description, enabled):
-        pool = Pool.query.filter(
-            Pool.ID == pool_id,
-            Pool.Name == name,
-            Pool.MaximumCount == maximum_count,
-            Pool.Description == description,
-            Pool.Enabled == enabled
-        ).first()
-
-        if pool is None:
-            # Try section for same ID error needed
+        try:
             pool = Pool(
                 ID=pool_id,
                 Name=name,
                 MaximumCount=maximum_count,
                 Description=description,
-                Enabled=1 if (enabled == "true") else 0,
+                Enabled=enabled,
             )
             db.session.add(pool)
             db.session.commit()
-        else:
-            print("Pool 'ID:" + pool.ID + " Name:" + pool.Name + "' already exists")
+        except sa_exc.IntegrityError:
+            print("Pool with ID:'" + pool.ID + "' already exists")
+
         return pool
 
     def get_software_list(self, software=None):
@@ -68,11 +59,7 @@ class Pool(db.Model):
             ).with_entities(Software.ID, Software.Name, SoftwareList.Version).join(Software).all()
 
     def add_software(self, software, version=""):
-        installed_software = SoftwareList.query.filter(
-            SoftwareList.PoolID == self.ID, SoftwareList.SoftwareID == software.ID, SoftwareList.Version == version
-        ).first()
-
-        if installed_software is None:
+        try:
             installed_software = SoftwareList(
                 PoolID=self.ID,
                 SoftwareID=software.ID,
@@ -80,7 +67,7 @@ class Pool(db.Model):
             )
             db.session.add(installed_software)
             db.session.commit()
-        else:
+        except sa_exc.IntegrityError:
             print("Software '" + software.Name + "' already installed")
 
     def remove_software(self, software, version=None):
@@ -133,7 +120,7 @@ class Pool(db.Model):
             "MaximumCount": self.MaximumCount,
         }
         return json.dumps(pool_object)
-
+    
 
 class Software(db.Model):
     __tablename__ = "Software"
