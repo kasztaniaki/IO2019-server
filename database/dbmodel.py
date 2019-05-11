@@ -43,7 +43,7 @@ class Pool(db.Model):
             db.session.add(pool)
             db.session.commit()
         except sa_exc.IntegrityError:
-            print("Pool with ID:'" + pool.ID + "' already exists")
+            print("Pool with ID:'" + pool_id + "' already exists")
 
         return pool
 
@@ -154,7 +154,8 @@ class User(db.Model):
             db.session.add(user)
             db.session.commit()
         except sa_exc.IntegrityError:
-            print("User with email: '" + user.Email + "' already exists")
+            print("User with email: '" + email + "' already exists")
+
         return user
 
     def set_email(self, email):
