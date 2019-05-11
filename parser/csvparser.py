@@ -83,6 +83,7 @@ class Parser:
         csv_reader = csv.reader(csv_string.split("\n"), delimiter=",")
 
         next(csv_reader)
+
         for row_number, row in enumerate(csv_reader, 1):
             if len(row) > 0:
 
