@@ -58,7 +58,7 @@ class Pool(db.Model):
                 SoftwareList.SoftwareID == software.ID
             ).with_entities(Software.ID, Software.Name, SoftwareList.Version).join(Software).all()
 
-    def add_software(self, software, version=""):
+    def add_software(self, software, version):
         try:
             installed_software = SoftwareList(
                 PoolID=self.ID,
@@ -102,12 +102,17 @@ class Pool(db.Model):
         return [Pool.json(pool) for pool in Pool.query.all()]
 
     def json(self):
+        try:
+            os_name = self.get_operating_system().Name
+        except AttributeError:
+            os_name = ""
+
         return {
             "ID": self.ID,
             "Name": self.Name,
             "MaximumCount": self.MaximumCount,
             "Enabled": self.Enabled,
-            "OSName": self.get_operating_system().Name,
+            "OSName": os_name,
             "InstalledSoftware": [
                 (software.Name, software.Version) for software in self.get_software_list()
             ],
