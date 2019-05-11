@@ -58,7 +58,7 @@ class Pool(db.Model):
                 SoftwareList.SoftwareID == software.ID
             ).with_entities(Software.ID, Software.Name, SoftwareList.Version).join(Software).all()
 
-    def add_software(self, software, version=""):
+    def add_software(self, software, version):
         try:
             installed_software = SoftwareList(
                 PoolID=self.ID,
