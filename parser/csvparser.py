@@ -1,70 +1,185 @@
 import csv
 
-from database.dbmodel import Pool, Software
+from database.dbmodel import Pool, Software, OperatingSystem
 
 
 class Parser:
     def __init__(self, file):
         self.file = file
 
-    def parse_file(self):
+    error_list = []
+
+    @staticmethod
+    def extract_name(line):
+        if len(line) < 1:
+            raise NameError("Couldn't find name")
+
+        name_end = line.find("(")
+
+        if name_end < 0:
+            name = line
+        else:
+            name = line[0: name_end]
+
+        # clear white spaces
+        name = name.strip()
+
+        if len(name) < 1:
+            raise ValueError("Name shouldn't be empty")
+
+        return name
+
+    @staticmethod
+    def extract_version(line):
+        version_start = line.find("(")
+        version_end = line.find(")")
+
+        if version_start < 0 or version_end < 0:
+            raise NameError("Couldn't find version")
+        else:
+            version = line[version_start + 1: version_end]
+
+        # clear white spaces
+        version = version.strip()
+
+        if len(version) < 1:
+            raise ValueError("Version shouldn't be empty")
+
+        return version
+
+    @staticmethod
+    def error_to_json(csv_line_number, csv_line, error_type, info):
+        return {
+            "line": csv_line_number,
+            "pool": csv_line,
+            "error": error_type,
+            "info": info
+        }
+
+    def is_list_empty(self):
+        if len(self.error_list) == 0:
+            return True
+        else:
+            return False
+
+    def get_error_list(self):
+        return {
+            "errors": [
+                self.error_list
+            ]
+        }
+
+    def clear_error_list(self):
+        self.error_list.clear()
+
+    def add_error(self, line_number, line, message):
+        self.error_list.append(Parser.error_to_json(line_number, line, "error", message))
+
+    def add_warning(self, line_number, line, message):
+        self.error_list.append(Parser.error_to_json(line_number, line, "warning", message))
+
+    def parse_file(self, force=False):
         csv_string = str(self.file.read(), "utf-8")
         csv_reader = csv.reader(csv_string.split("\n"), delimiter=",")
 
         next(csv_reader)
-        for row in csv_reader:
+        for row_number, row in enumerate(csv_reader, 1):
             if len(row) > 0:
-                pool_name = row[0]
 
-                os_start = row[1].find("(")
-                os_end = row[1].find(")")
-                # checking if OS name is provided in
-                if os_start < 0 or os_end < 0:
-                    os_name = " - "
-                    pool_display_name = row[1]
+                # ID
+                try:
+                    pool_id = Parser.extract_name(row[0])
+
+                    if Pool.get_pool(pool_id):
+                        self.add_error(row_number, row, "Pool with this ID already exists!")
+                        force = False
+
+                except (ValueError, NameError):
+                    self.add_error(row_number, row, "Incorrect 'Pool ID' value!")
+                    force = False
+
+                # Name
+                try:
+                    pool_name = Parser.extract_name(row[1])
+                except (ValueError, NameError):
+                    self.add_warning(row_number, row, "Incorrect 'Pool Name' value")
+                    force = False
+
+                # Maximum Count
+                try:
+                    pool_maximum_count = int(row[2])
+                except ValueError:
+                    self.add_warning("Incorrect 'Maximum Count' value")
+                    pool_maximum_count = 0
+
+                if pool_maximum_count < 0:
+                    self.add_warning(row_number, row, "Incorrect 'Maximum Count' value")
+
+                # Enabled
+                if row[3].strip() == "true":
+                    enabled = True
+                elif row[3].strip() == "false":
+                    enabled = False
                 else:
-                    os_name = row[1][os_start + 1 : os_end]
-                    pool_display_name = row[1][0 : os_start - 1]
+                    self.add_warning(row_number, row, "Incorrect 'Enabled' value'")
+                    enabled = False
 
-                pool_maximum_count = row[2]
-                enabled = row[3]
-                pool_description = ""
-                os_language = "PL/EN"
-                os_version = ""
+                pool_description = ''
 
-                # pool_id = Pool.add_pool(
-                #     pool_name,
-                #     pool_display_name,
-                #     pool_maximum_count,
-                #     os_name,
-                #     pool_description,
-                #     enabled,
-                # )
+                # adding Pool to database
+                if force:
+                    pool = Pool.add_pool(
+                        pool_id,
+                        pool_name,
+                        pool_maximum_count,
+                        pool_description,
+                        enabled,
+                    )
+                else:
+                    pool = None
 
-                # if pool_id < 0:
-                #     return -1
+                # Operating System
+                try:
+                    pool_os = Parser.extract_version(row[1])
 
-                raw_software_list = row[4].split(",")
+                    # adding Operating System to Pool in database
+                    if force and pool:
+                        operating_system = OperatingSystem.add_operating_system(pool_os)
+                        pool.set_operating_system(operating_system)
 
-                for line in raw_software_list:
-                    soft_ver_start = line.find("(")
-                    soft_ver_end = line.find(")")
-                    if soft_ver_start < 0 or soft_ver_end < 0:
-                        if len(line) > 20:
-                            pool_description = pool_description + " | " + line
-                        # else:
-                            # Software.add_software_to_pool(pool_id, line, " - ")
-                    else:
-                        software_name = line[0 : soft_ver_start - 1].strip()
-                        software_version = line[
-                            soft_ver_start + 1 : soft_ver_end
-                        ].strip()
+                except (ValueError, NameError):
+                    self.add_warning(row_number, row, "Incorrect 'Operating System' value")
 
-                        if len(software_version) > 10:
-                            software_version = " - "
+                # Software
+                if len(row[4]) < 1:
+                    continue
 
-                        # Software.add_software_to_pool(
-                        #     pool_id, software_name, software_version
-                        # )
-                # Pool.set_pool_description(pool_id, pool_description) - no implementation
-        return 0
+                software_list = row[4].split(",")
+
+                for line in software_list:
+
+                    # Software Name
+                    try:
+                        software_name = Parser.extract_name(line)
+                    except (ValueError, NameError):
+                        self.add_error(row_number, row, "Incorrect 'Software Name' value")
+                        force = False
+
+                    # Software Version
+                    try:
+                        software_version = Parser.extract_version(line)
+
+                        if line.find(')')+1 < len(line):
+                            self.add_warning(row_number, row,
+                                             "Unexpected content after software version (split software with ',')")
+
+                    except ValueError:
+                        self.add_warning(row_number, row, "Incorrect 'Software Version' value")
+                        software_version = ''
+                    except NameError:
+                        software_version = ''
+
+                    # adding Software to pool and database
+                    if force and pool:
+                        software = Software.add_software(software_name)
+                        pool.add_software(software, software_version)
