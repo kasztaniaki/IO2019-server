@@ -49,3 +49,7 @@ To run tests:
 To run python formatter for directory:
         
         black $DIR
+        
+To create database run 'init_db', with (standard):
+        
+        http://127.0.0.1:5000/init_db
