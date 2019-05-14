@@ -17,19 +17,19 @@ def get_pools():
 @app.route("/pool", methods=["GET"])
 def get_pool():
     if "id" not in request.args:
-        return "Invalid request", 422
+        return "Pool ID not provided in request", 400
     id = request.args.get('id')
     try:
         pool = Pool.get_pool(id)
         return jsonify({"pool": Pool.json(pool)})
     except AttributeError:
-        return "Pool of ID {} doesn't exist!".format(id), 404
+        return "Pool of ID {} doesn't exist".format(id), 404
 
 
 @app.route("/add_pool", methods=["POST"])
 def add_pool():
     if not request.json:
-        return "Invalid request", 422
+        return "Pool data not provided", 400
     try:
         pool_id = request.json['ID']
         pool = Pool.add_pool(pool_id,
@@ -41,56 +41,41 @@ def add_pool():
         for name, version in installed_software:
             sw = Software.add_software(name)
             pool.add_software(sw, version)
-        return Pool.get_pool(pool_id).ID
+        return Pool.get_pool(pool_id).ID, 200
     except KeyError as e:
-        return "Value of {} missing in given JSON".format(e)
+        return "Value of {} missing in given JSON".format(e), 400
 
 
 @app.route("/edit_pool", methods=["POST"])
 def edit_pool():
-    if "id" not in request.args or not request.json:
-        return "Invalid request", 422
+    if "id" not in request.args:
+        return "Pool ID not provided in request", 400
+    if not request.json:
+        return "Pool data not provided", 400
+
     id = request.args.get('id')
-
     try:
-        pool = Pool.get_pool(id)
-        installed_software = request.json.get('InstalledSoftware', [])
-        sw_to_remove = list(filter(lambda x: list(x[1:]) not in installed_software,
-                                   pool.get_software_list()))
-
-        for sw in sw_to_remove:
-            pool.remove_software(sw[0], sw[1])
-
-        sw_to_add = list(filter(lambda x: x not in [list(y[1:])
-                                                    for y in pool.get_software_list()],
-                                installed_software))
-
-        for name, version in sw_to_add:
-            sw = Software.add_software(name)
-            pool.add_software(sw, version)
-
-        Pool.edit_pool(id,
-                       request.json['ID'],
-                       request.json['Name'],
-                       request.json.get('MaximumCount', ''),
-                       request.json.get('Description', ''),
-                       request.json.get('Enabled', False))
-        return Pool.get_pool(request.json['ID']).ID
-    except AttributeError as e:
-        print(e)
+        if Pool.edit_software(id, request.json.get('InstalledSoftware', [])) \
+               and Pool.edit_pool(id,
+                           request.json['ID'],
+                           request.json['Name'],
+                           request.json.get('MaximumCount', ''),
+                           request.json.get('Description', ''),
+                           request.json.get('Enabled', False)):
+            return "Pool successfully edited", 200
+        return "Problem with editing pool", 422
+    except AttributeError:
         return "Pool of ID {} doesn't exist!".format(id), 404
 
 
 @app.route("/rm_pool", methods=["GET"])
 def rm_pool():
     if "id" not in request.args:
-        return "Invalid request", 422
+        return "Pool ID not provided in request", 400
     id = request.args.get('id')
-    try:
-        Pool.rm_pool(id)
-        return str(not Pool.get_pool(id))
-    except AttributeError as e:
+    if not Pool.rm_pool(id):
         return "Pool of ID {} doesn't exist!".format(id), 404
+    return "Pool of ID {} successfully deleted".format(id), 200
 
 
 @app.route("/import", methods=["POST"])
