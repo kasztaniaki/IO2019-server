@@ -47,6 +47,25 @@ class Pool(db.Model):
 
         return pool
 
+    @staticmethod
+    def rm_pool(pool_id):
+        pool = Pool.query.filter(Pool.ID == pool_id).first()
+        software_list = SoftwareList.query.filter(SoftwareList.PoolID == pool_id).all()
+        for sw in software_list:
+            db.session.delete(sw)
+        db.session.delete(pool)
+        db.session.commit()
+
+    @staticmethod
+    def edit_pool(pool_id, id, name, max_count, description, enabled):
+        pool = Pool.query.filter(Pool.ID == pool_id).first()
+        pool.ID = id
+        pool.Name = name
+        pool.MaximumCount = max_count
+        pool.Description = description
+        pool.Enabled = enabled
+        db.session.commit()
+
     def get_software_list(self, software=None):
         if software is None:
             return SoftwareList.query.filter(
