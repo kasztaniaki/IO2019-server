@@ -36,14 +36,22 @@ def add_pool():
                              request.json['Name'],
                              request.json.get('MaximumCount', 0),
                              request.json.get('Description', ''),
-                             request.json.get('Enabled', False))
+                             request.json.get('Enabled', False)
+                             )
+        os = request.json.get('OSName', '')
+        if os:
+            operating_system = OperatingSystem.add_operating_system(os)
+            pool.set_operating_system(operating_system)
+
         installed_software = request.json.get('InstalledSoftware', [])
         for name, version in installed_software:
-            sw = Software.add_software(name)
-            pool.add_software(sw, version)
+            software = Software.add_software(name)
+            pool.add_software(software, version)
         return Pool.get_pool(pool_id).ID, 200
     except KeyError as e:
         return "Value of {} missing in given JSON".format(e), 400
+    except ValueError:
+        return "Pool of given ID already exists", 422
 
 
 @app.route("/edit_pool", methods=["POST"])
@@ -55,25 +63,37 @@ def edit_pool():
 
     id = request.args.get('id')
     try:
-        if Pool.edit_software(id, request.json.get('InstalledSoftware', [])) \
-               and Pool.edit_pool(id,
-                           request.json['ID'],
-                           request.json['Name'],
-                           request.json.get('MaximumCount', ''),
-                           request.json.get('Description', ''),
-                           request.json.get('Enabled', False)):
-            return "Pool successfully edited", 200
-        return "Problem with editing pool", 422
-    except AttributeError:
-        return "Pool of ID {} doesn't exist!".format(id), 404
+        pool = Pool.edit_pool(id,
+                              request.json['ID'],
+                              request.json['Name'],
+                              request.json.get('MaximumCount', ''),
+                              request.json.get('Description', ''),
+                              request.json.get('Enabled', False)
+                              )
+        pool.edit_software(request.json.get('InstalledSoftware', []))
+
+        os = request.json.get('OSName', '')
+        if os:
+            operating_system = OperatingSystem.add_operating_system(os)
+            pool.set_operating_system(operating_system)
+
+        return "Pool successfully edited", 200
+    except ValueError:
+        return "Pool of given ID already exists", 422
+    except AttributeError as e:
+        print(e)
+        return "Pool of ID {} doesn't exist".format(id), 404
 
 
-@app.route("/rm_pool", methods=["GET"])
-def rm_pool():
+@app.route("/remove_pool", methods=["GET"])
+def remove_pool():
     if "id" not in request.args:
         return "Pool ID not provided in request", 400
-    id = request.args.get('id')
-    if not Pool.rm_pool(id):
+    try:
+        id = request.args.get('id')
+        Pool.remove_pool(id)
+    except Exception as e:
+        print(e)
         return "Pool of ID {} doesn't exist!".format(id), 404
     return "Pool of ID {} successfully deleted".format(id), 200
 

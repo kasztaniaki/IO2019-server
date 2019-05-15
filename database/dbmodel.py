@@ -1,5 +1,5 @@
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import CheckConstraint, exc as sa_exc
+from sqlalchemy import CheckConstraint, orm, exc as sa_exc
 import json
 from settings import app
 
@@ -44,42 +44,46 @@ class Pool(db.Model):
             db.session.commit()
         except sa_exc.IntegrityError:
             print("Pool with ID:'" + pool_id + "' already exists")
+            raise ValueError
 
         return pool
 
     @staticmethod
-    def rm_pool(pool_id):
-        pool = Pool.query.filter(Pool.ID == pool_id).first()
-        if not pool:
-            return False
-        software_list = SoftwareList.query.filter(SoftwareList.PoolID == pool_id).all()
-        for sw in software_list:
-            db.session.delete(sw)
-        db.session.delete(pool)
-        db.session.commit()
-        return True
+    def remove_pool(pool_id):
+        try:
+            pool = Pool.query.filter(Pool.ID == pool_id).first()
+            software_list = SoftwareList.query.filter(SoftwareList.PoolID == pool_id).all()
+            for software in software_list:
+                db.session.delete(software)
+            db.session.delete(pool)
+            db.session.commit()
+        except orm.exc.UnmappedInstanceError:
+            print("Pool of ID:'" + pool_id + "' doesn't exist")
+            raise ValueError
+
 
     @staticmethod
     def edit_pool(pool_id, new_id, name, max_count, description, enabled):
-        if pool_id != new_id and (new_id,) in Pool.query.filter().with_entities(Pool.ID).all():
-            return False
-        pool = Pool.query.filter(Pool.ID == pool_id).first()
-        pool.ID = new_id
-        pool.Name = name
-        pool.MaximumCount = max_count
-        pool.Description = description
-        pool.Enabled = enabled
-        db.session.commit()
+        try:
+            pool = Pool.query.filter(Pool.ID == pool_id).first()
+            pool.ID = new_id
+            pool.Name = name
+            pool.MaximumCount = max_count
+            pool.Description = description
+            pool.Enabled = enabled
+            db.session.commit()
+        except sa_exc.IntegrityError:
+            print("Pool with ID:'" + pool_id + "' already exists")
+            raise ValueError
 
-        for sw in SoftwareList.query.filter(SoftwareList.PoolID == pool_id).all():
-            sw.PoolID = new_id
+        for software in SoftwareList.query.filter(SoftwareList.PoolID == pool_id).all():
+            software.PoolID = new_id
             db.session.commit()
 
-        return True
+        return pool
 
-    @staticmethod
-    def edit_software(pool_id, new_software_list):
-        pool = Pool.query.filter(Pool.ID == pool_id).first()
+    def edit_software(self, new_software_list):
+        pool = Pool.query.filter(Pool.ID == self.ID).first()
         old_software_list = {tuple(x[1:]) for x in pool.get_software_list()}
         new_software_list = {tuple(x) for x in new_software_list}
 
