@@ -61,7 +61,6 @@ class Pool(db.Model):
             print("Pool of ID:'" + pool_id + "' doesn't exist")
             raise ValueError
 
-
     @staticmethod
     def edit_pool(pool_id, new_id, name, max_count, description, enabled):
         try:
@@ -268,6 +267,20 @@ class User(db.Model):
             "IsAdmin": self.IsAdmin
         }
         return json.dumps(user_object)
+
+
+class Reservation(db.Model):
+    __tablename__ = "Reservation"
+
+    ID = db.Column(db.String(80), primary_key=True)
+    PoolID = db.Column(db.Integer, db.ForeignKey("Pool.ID"))
+    UserID = db.Column(db.Integer, db.ForeignKey("User.ID"))
+    StartDate = db.Column(db.DateTime)
+    EndDate = db.Column(db.DateTime)
+    MachineCount = db.Column(db.Integer)
+    Cancelled = db.Column(db.Boolean)
+    User = db.relationship("User")
+    Pool = db.relationship("Pool")
 
 
 class Software(db.Model):
