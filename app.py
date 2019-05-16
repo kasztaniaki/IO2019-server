@@ -132,5 +132,78 @@ def init_db():
     return "Database reseted"
 
 
+@app.route("/account", methods=["GET"])
+def manage_user_profile():
+    if "id" not in request.args:
+        return "User ID not provided in request", 400
+    id = request.args.get('id')
+    try:
+        user = User.get_user(id)
+        return jsonify({"user": User.json(user)})
+    except AttributeError:
+        return "User of ID {} doesn't exist".format(id), 404
+
+
+@app.route("/accounts", methods=["GET"])
+def manage_profiles():
+    return jsonify({"users": User.get_table()})
+
+
+@app.route("/delete_account", methods=["GET"])
+def delete_user_profile():
+    if "id" not in request.args:
+        return "User ID not provided in request", 400
+    id = request.args.get('id')
+    try:
+        User.remove_user(id)
+        return "User of ID {} is deleted".format(id)
+    except AttributeError:
+        return "User of ID {} doesn't exist".format(id), 404
+
+
+@app.route("/add_account", methods=["POST"])
+def add_account():
+    if not request.json:
+        return "Account data not provided", 400
+    try:
+        user_id = request.json['ID']
+        user = User.add_user(request.json['Email'],
+                             request.json['Password'],
+                             request.json['Name'],
+                             request.json['Surname'],
+                             request.json.get('IsAdmin', '')
+                             )
+        return User.get_user(user_id).ID, 200
+    except KeyError as e:
+        return "Value of {} missing in given JSON".format(e), 400
+    except ValueError:
+        return "User of given ID already exists", 422
+
+
+@app.route("/edit_user", methods=["POST"])
+def edit_user():
+    if "id" not in request.args:
+        return "User ID not provided in request", 400
+    if not request.json:
+        return "User data not provided", 400
+
+    id = request.args.get('id')
+    try:
+        user = User.edit_user(id,
+                              request.json['Email'],
+                              request.json['Password'],
+                              request.json.get('Name'),
+                              request.json.get('Surname'),
+                              request.json.get('IsAdmin', '')
+                              )
+
+        return "User successfully edited", 200
+    except ValueError:
+        return "User of given ID already exists", 422
+    except AttributeError as e:
+        print(e)
+        return "User of ID {} doesn't exist".format(id), 404
+
+
 if __name__ == "__main__":
     app.run()

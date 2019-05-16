@@ -207,6 +207,32 @@ class User(db.Model):
 
         return user
 
+		@staticmethod
+		def remove_user(user_id):
+			try:
+				user = User.query.filter(User.ID == user_id).first()
+				db.session.delete(user)
+				db.session.commit()
+			except orm.exc.UnmappedInstanceError:
+				print("User of ID:'" + user_id + "' doesn't exist")
+				raise ValueError
+
+		@staticmethod
+		def edit_user(user_id, new_id, email, password, name, surname, is_admin=False):
+			try:
+				user = Pool.query.filter(Pool.ID == user_id).first()
+				user.ID = new_id
+				user.Name = name
+				user.Email = email
+				user.Password = password
+				user.Surname = surname
+				user.IsAdmin = is_admin
+				db.session.commit()
+			except sa_exc.IntegrityError:
+				print("User with ID:'" + user_id + "' already exists")
+				raise ValueError
+			return user
+
     def set_email(self, email):
         if email != self.Email:
             try:
