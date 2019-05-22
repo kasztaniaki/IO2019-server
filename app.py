@@ -154,6 +154,7 @@ def delete_user_profile():
     if "id" not in request.args:
         return "User ID not provided in request", 400
     id = request.args.get('id')
+    print(id)
     try:
         User.remove_user(id)
         return "User of ID {} is deleted".format(id)
@@ -166,14 +167,16 @@ def add_account():
     if not request.json:
         return "Account data not provided", 400
     try:
-        user_id = request.json['ID']
+        is_admin = False
+        if request.json['IsAdmin'] == "True": is_admin = True
         user = User.add_user(request.json['Email'],
                              request.json['Password'],
                              request.json['Name'],
                              request.json['Surname'],
-                             request.json.get('IsAdmin', '')
+                             is_admin
                              )
-        return User.get_user(user_id).ID, 200
+
+        return User.get_user(request.json['Email']).Email, 200
     except KeyError as e:
         return "Value of {} missing in given JSON".format(e), 400
     except ValueError:
@@ -189,13 +192,17 @@ def edit_user():
 
     id = request.args.get('id')
     try:
-        user = User.edit_user(id,
-                              request.json['Email'],
-                              request.json['Password'],
-                              request.json.get('Name'),
-                              request.json.get('Surname'),
-                              request.json.get('IsAdmin', '')
-                              )
+        is_admin = False
+        if request.json['IsAdmin'] == "True": is_admin = True
+        user = User.edit_user(
+            id,
+            request.json['NewId'],
+            request.json['Email'],
+            request.json['Password'],
+            request.json['Name'],
+            request.json['Surname'],
+            is_admin
+        )
 
         return "User successfully edited", 200
     except ValueError:
