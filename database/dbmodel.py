@@ -2,6 +2,7 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import CheckConstraint, orm, exc as sa_exc
 import json
 from settings import app
+from datetime import datetime as date
 
 db = SQLAlchemy(app)
 
@@ -251,7 +252,7 @@ class User(db.Model):
             return user
         except sa_exc.IntegrityError:
             print("User with email: '" + email + "' already exists")
-        
+
     def set_email(self, email):
         if email != self.Email:
             try:
@@ -296,8 +297,28 @@ class User(db.Model):
             return False
 
     # TODO: show all user's reservations IDs
-    def get_reservations(self):
-        return 0
+    def get_reservations(self, start_date=date(2019, 1, 1), end_date=date(2099, 12, 31), show_cancelled=True):
+        reservation_list = []
+
+        if show_cancelled:
+            query = Reservation.query.filter(
+                Reservation.UserID == self.ID,
+                Reservation.StartDate < end_date,
+                Reservation.EndDate > start_date,
+            ).with_entities(Reservation.ID).all()
+        else:
+            query = Reservation.query.filter(
+                Reservation.UserID == self.ID,
+                Reservation.StartDate < end_date,
+                Reservation.EndDate > start_date,
+                Reservation.Cancelled is False
+            ).with_entities(Reservation.ID).all()
+
+        for reservation_id in query:
+            reservation = Reservation.get_reservation(reservation_id[0])
+            reservation_list.append(reservation)
+
+        return reservation_list
 
     def json(self):
         return {
@@ -343,6 +364,18 @@ class Reservation(db.Model):
 
         self.Cancelled = True
         db.session.commit()
+
+    def __repr__(self):
+        reservation_object = {
+            "ID": self.ID,
+            "PoolID": self.PoolID,
+            "UserID": self.UserID,
+            "StartDate": self.StartDate,
+            "EndDate": self.EndDate,
+            "MachineCount": self.MachineCount,
+            "Cancelled": self.Cancelled
+        }
+        return json.dumps(reservation_object)
 
 
 class Software(db.Model):
