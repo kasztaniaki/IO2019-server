@@ -1,5 +1,5 @@
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import CheckConstraint, exc as sa_exc
+from sqlalchemy import CheckConstraint, orm, exc as sa_exc
 import json
 from settings import app
 
@@ -21,7 +21,7 @@ class Pool(db.Model):
     ID = db.Column(db.String(80), primary_key=True)
     Name = db.Column(db.String(80), nullable=False)
     MaximumCount = db.Column(db.Integer)
-    Description = db.Column(db.String(80))
+    Description = db.Column(db.String(200))
     Enabled = db.Column(db.Boolean)
     OSID = db.Column(db.Integer, db.ForeignKey("OperatingSystem.ID"))
     Software = db.relationship("SoftwareList")
@@ -44,8 +44,57 @@ class Pool(db.Model):
             db.session.commit()
         except sa_exc.IntegrityError:
             print("Pool with ID:'" + pool_id + "' already exists")
+            raise ValueError
 
         return pool
+
+    @staticmethod
+    def remove_pool(pool_id):
+        try:
+            pool = Pool.query.filter(Pool.ID == pool_id).first()
+            software_list = SoftwareList.query.filter(SoftwareList.PoolID == pool_id).all()
+            for software in software_list:
+                db.session.delete(software)
+            db.session.delete(pool)
+            db.session.commit()
+        except orm.exc.UnmappedInstanceError:
+            print("Pool of ID:'" + pool_id + "' doesn't exist")
+            raise ValueError
+
+
+    @staticmethod
+    def edit_pool(pool_id, new_id, name, max_count, description, enabled):
+        try:
+            pool = Pool.query.filter(Pool.ID == pool_id).first()
+            pool.ID = new_id
+            pool.Name = name
+            pool.MaximumCount = max_count
+            pool.Description = description
+            pool.Enabled = enabled
+            db.session.commit()
+        except sa_exc.IntegrityError:
+            print("Pool with ID:'" + pool_id + "' already exists")
+            raise ValueError
+
+        for software in SoftwareList.query.filter(SoftwareList.PoolID == pool_id).all():
+            software.PoolID = new_id
+            db.session.commit()
+
+        return pool
+
+    def edit_software(self, new_software_list):
+        pool = Pool.query.filter(Pool.ID == self.ID).first()
+        old_software_list = {tuple(x[1:]) for x in pool.get_software_list()}
+        new_software_list = {tuple(x) for x in new_software_list}
+
+        software_to_remove = old_software_list.difference(new_software_list)
+        for name, version in software_to_remove:
+            pool.remove_software(Software.get_software_by_name(name), version)
+
+        software_to_add = new_software_list.difference(old_software_list)
+        for name, version in software_to_add:
+            software = Software.add_software(name)
+            pool.add_software(software, version)
 
     def get_software_list(self, software=None):
         if software is None:
@@ -245,6 +294,10 @@ class Software(db.Model):
     @staticmethod
     def get_software(software_id):
         return Software.query.filter(Software.ID == software_id).first()
+
+    @staticmethod
+    def get_software_by_name(name):
+        return Software.query.filter(Software.Name == name).first()
 
     @staticmethod
     def add_software(software_name):
