@@ -200,7 +200,7 @@ def init_db():
     db.drop_all()
     db.session.commit()
     db.create_all()
-    User.add_user("admin@admin.example", "ala123", "Admin", "Admin", True)
+    User.add_user("admin@admin.example", "ala123456", "Admin", "Admin", True)
     db.session.commit()
     return "Database reseted"
 
