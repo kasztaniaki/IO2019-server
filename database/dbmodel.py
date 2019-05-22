@@ -186,6 +186,9 @@ class User(db.Model):
     Surname = db.Column(db.String(80))
     IsAdmin = db.Column(db.Boolean)
 
+    @staticmethod
+    def get_table():
+        return [User.json(user) for user in User.query.all()]
 
     @staticmethod
     def username_password_mathc(_email, _password):

@@ -74,11 +74,15 @@ def register():
     return jsonify({'test': result})
 
 
-
 @app.route("/pools", methods=["GET"])
 @login_required
 def get_pools():
     return jsonify({"pools": Pool.get_table()})
+
+
+@app.route("/users", methods=["GET"])
+def get_users():
+    return jsonify({"users": User.get_table()})
 
 
 @app.route("/pool", methods=["GET"])
