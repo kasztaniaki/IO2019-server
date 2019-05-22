@@ -189,7 +189,7 @@ def import_pools():
 
 
 @app.route("/init_db")
-@login_required
+# @login_required
 def init_db():
     # Test method for clearing and creating new empty database
     # Also can create database.db from scratch
