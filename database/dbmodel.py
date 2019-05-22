@@ -145,6 +145,52 @@ class Pool(db.Model):
         self.OSID = operating_system.ID
         db.session.commit()
 
+    def add_reservation(self, user, machine_count, start_date, end_date):
+        if machine_count <= 0:
+            raise ValueError("Machine count have to greater than 0")
+
+        try:
+            free_machines = self.available_machines(start_date, end_date)
+        except ValueError:
+            print("It's forbidden to make reservation on disabled pool")
+            free_machines = 0
+
+        if free_machines-machine_count < 0:
+            raise ValueError("There are not enough available machines in given time frame")
+
+        try:
+            reservation = Reservation(
+                PoolID=self.ID,
+                UserID=user.ID,
+                StartDate=start_date,
+                EndDate=end_date,
+                MachineCount=machine_count,
+                Cancelled=False
+            )
+
+            db.session.add(reservation)
+            db.session.commit()
+
+            return reservation
+        except sa_exc.IntegrityError:
+            print("Reservation of pool nr: " + self.ID + " cannot be added")
+
+    def available_machines(self, start_date, end_date):
+        if self.Enabled is False:
+            raise ValueError("Disabled Pool cannot be reserved")
+
+        taken_machines_array = Reservation.query.filter(
+            Reservation.PoolID == self.ID,
+            Reservation.StartDate < end_date,
+            Reservation.EndDate > start_date,
+            Reservation.Cancelled is False
+        ).with_entities(Reservation.MachineCount).all()
+
+        taken_machines = 0
+        for machines in taken_machines_array:
+            taken_machines = taken_machines + machines[0]
+        return self.MaximumCount - taken_machines
+
     @staticmethod
     def get_table():
         return [Pool.json(pool) for pool in Pool.query.all()]
@@ -201,11 +247,11 @@ class User(db.Model):
             )
             db.session.add(user)
             db.session.commit()
+
+            return user
         except sa_exc.IntegrityError:
             print("User with email: '" + email + "' already exists")
-
-        return user
-
+        
     def set_email(self, email):
         if email != self.Email:
             try:
@@ -249,6 +295,10 @@ class User(db.Model):
         else:
             return False
 
+    # TODO: show all user's reservations IDs
+    def get_reservations(self):
+        return 0
+
     def json(self):
         return {
             "ID": self.ID,
@@ -272,7 +322,7 @@ class User(db.Model):
 class Reservation(db.Model):
     __tablename__ = "Reservation"
 
-    ID = db.Column(db.String(80), primary_key=True)
+    ID = db.Column(db.Integer, primary_key=True)
     PoolID = db.Column(db.Integer, db.ForeignKey("Pool.ID"))
     UserID = db.Column(db.Integer, db.ForeignKey("User.ID"))
     StartDate = db.Column(db.DateTime)
@@ -281,6 +331,18 @@ class Reservation(db.Model):
     Cancelled = db.Column(db.Boolean)
     User = db.relationship("User")
     Pool = db.relationship("Pool")
+
+    @staticmethod
+    def get_reservation(reservation_id):
+        return Reservation.query.filter(Reservation.ID == reservation_id).first()
+
+    def cancel(self):
+        if self.Cancelled:
+            print("Reservation " + self.ID + " is already cancelled")
+            raise AttributeError
+
+        self.Cancelled = True
+        db.session.commit()
 
 
 class Software(db.Model):
