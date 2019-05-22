@@ -1,13 +1,11 @@
-from flask import jsonify, request, redirect
+from flask import jsonify, request, redirect, Response
 import os
-from database.dbmodel import Pool, db, User
 from database.dbmodel import Pool, db, Software, OperatingSystem, User, SoftwareList
 from parser.csvparser import Parser
 from settings import app
-from sqlalchemy import  exc as sa_exc
+from sqlalchemy import exc as sa_exc
 import jwt
 import datetime
-import response
 from functools import wraps
 
 
@@ -20,41 +18,40 @@ def login_required(f):
             return f(*args, **kwargs)
         except:
             return jsonify({'error': 'not logged'}), 401
+
     return wrapper
 
 
 @app.route("/home")
 def hello_world():
-        return "Hello World!"
+    return "Hello World!"
 
 
 @app.route("/")
 def world():
-        return "W!"
+    return "W!"
 
 
 @app.route("/users/signin", methods=["GET", "POST"])
 def get_token():
-
-    data= request.get_json(force = True)
+    data = request.get_json(force=True)
     email = str(data['email'])
     password = str(data['password'])
 
-    match = User.username_password_mathc(email, password)
+    match = User.username_password_match(email, password)
 
     if match:
-        expiration_date = datetime.datetime.utcnow()+datetime.timedelta(seconds=100)
+        expiration_date = datetime.datetime.utcnow() + datetime.timedelta(seconds=100)
         token = jwt.encode({'exp': expiration_date}, app.config['SECRET_KEY'], algorithm='HS256')
         return token
 
     else:
-        response('', 401, mimetype='application/json')
+        Response('', 401, mimetype='application/json')
 
 
 @app.route("/users/signup", methods=["GET", "POST"])
 def register():
-
-    data= request.get_json(force = True)
+    data = request.get_json(force=True)
     firstname = data['firstname']
     lastname = data['lastname']
     email = data['email']
@@ -64,8 +61,8 @@ def register():
     except sa_exc.IntegrityError:
         print("User with email: '" + email + "' already exists")
 
-    result ={
-        'firsr': firstname,
+    result = {
+        'first': firstname,
         'last': lastname,
         'email': email,
         'password': password
@@ -74,8 +71,47 @@ def register():
     return jsonify({'test': result})
 
 
-@app.route("/pools", methods=["GET"])
+@app.route("/users/edit_user", methods=["POST"])
 @login_required
+def edit_user():
+    if "id" not in request.args:
+        return "User ID not provided in request", 400
+    if not request.json:
+        return "User data not provided", 400
+
+    id = request.args.get('id')
+    try:
+        user = User.get_user(id)
+        user.set_name(request.json.get('new_name', user.Name))
+        user.set_surname(request.json.get('new_surname', user.Surname))
+        user.set_password(request.json.get('new_password', user.Password))
+        if request.args.get('token'):
+            user.set_email(request.json.get('new_mail', user.Email))
+            user.set_admin_permissions(request.json.get('is_admin', user.IsAdmin))
+        return "User successfully edited", 200
+    except ValueError:
+        return "User of given e-mail already exists", 422
+    except AttributeError as e:
+        print(e)
+        return "User of ID {} doesn't exist".format(id), 404
+
+
+@app.route("/users/remove_user", methods=["POST"])
+@login_required
+def edit_user():
+    if "id" not in request.args:
+        return "User ID not provided in request", 400
+    try:
+        id = request.args.get('id')
+        User.remove_user(id)
+    except Exception as e:
+        print(e)
+        return "User of ID {} doesn't exist!".format(id), 404
+    return "User of ID {} successfully deleted".format(id), 200
+
+
+@app.route("/pools", methods=["GET"])
+# @login_required
 def get_pools():
     return jsonify({"pools": Pool.get_table()})
 
@@ -86,6 +122,7 @@ def get_users():
 
 
 @app.route("/pool", methods=["GET"])
+@login_required
 def get_pool():
     if "id" not in request.args:
         return "Pool ID not provided in request", 400
@@ -98,6 +135,7 @@ def get_pool():
 
 
 @app.route("/add_pool", methods=["POST"])
+@login_required
 def add_pool():
     if not request.json:
         return "Pool data not provided", 400
@@ -126,6 +164,7 @@ def add_pool():
 
 
 @app.route("/edit_pool", methods=["POST"])
+@login_required
 def edit_pool():
     if "id" not in request.args:
         return "Pool ID not provided in request", 400
@@ -157,6 +196,7 @@ def edit_pool():
 
 
 @app.route("/remove_pool", methods=["GET"])
+@login_required
 def remove_pool():
     if "id" not in request.args:
         return "Pool ID not provided in request", 400
@@ -170,6 +210,7 @@ def remove_pool():
 
 
 @app.route("/import", methods=["POST"])
+@login_required
 def import_pools():
     if "pools_csv" not in request.files or "force" not in request.args:
         return redirect(request.url)

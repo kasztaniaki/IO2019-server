@@ -61,7 +61,6 @@ class Pool(db.Model):
             print("Pool of ID:'" + pool_id + "' doesn't exist")
             raise ValueError
 
-
     @staticmethod
     def edit_pool(pool_id, new_id, name, max_count, description, enabled):
         try:
@@ -191,13 +190,12 @@ class User(db.Model):
         return [User.json(user) for user in User.query.all()]
 
     @staticmethod
-    def username_password_mathc(_email, _password):
-        user= User.query.filter_by(Email=_email).filter_by(Password=_password).first()
+    def username_password_match(_email, _password):
+        user = User.query.filter_by(Email=_email).filter_by(Password=_password).first()
         if user is None:
             return False
         else:
             return True
-
 
     @staticmethod
     def get_user(user_id):
@@ -206,7 +204,6 @@ class User(db.Model):
     @staticmethod
     def get_user_by_email(email):
         return User.query.filter(User.Email == email).first()
-
 
     @staticmethod
     def add_user(email, password, name, surname, is_admin=False):
@@ -224,6 +221,16 @@ class User(db.Model):
             print("User with email: '" + email + "' already exists")
 
         return user
+
+    @staticmethod
+    def remove_user(user_id):
+        try:
+            user = User.query.filter(User.ID == user_id).first()
+            db.session.delete(user)
+            db.session.commit()
+        except orm.exc.UnmappedInstanceError:
+            print("Pool of ID: '{}' doesn't exist".format(user_id))
+            raise ValueError
 
     def set_email(self, email):
         if email != self.Email:
@@ -246,6 +253,11 @@ class User(db.Model):
     def set_surname(self, surname):
         if surname != self.Surname:
             self.Surname = surname
+            db.session.commit()
+
+    def set_admin_permissions(self, is_admin):
+        if self.IsAdmin != is_admin:
+            self.IsAdmin = is_admin
             db.session.commit()
 
     def give_admin_permissions(self):
