@@ -150,11 +150,10 @@ class Pool(db.Model):
         if machine_count <= 0:
             raise ValueError("Machine count have to greater than 0")
 
-        try:
-            free_machines = self.available_machines(start_date, end_date)
-        except ValueError:
-            print("It's forbidden to make reservation on disabled pool")
-            free_machines = 0
+        if self.Enabled is False:
+            raise AttributeError("Disabled Pool cannot be reserved")
+
+        free_machines = self.available_machines(start_date, end_date)
 
         if free_machines-machine_count < 0:
             raise ValueError("There are not enough available machines in given time frame")
@@ -178,7 +177,7 @@ class Pool(db.Model):
 
     def available_machines(self, start_date, end_date):
         if self.Enabled is False:
-            raise ValueError("Disabled Pool cannot be reserved")
+            raise AttributeError("Disabled Pool has no available machines")
 
         taken_machines_array = Reservation.query.filter(
             Reservation.PoolID == self.ID,
