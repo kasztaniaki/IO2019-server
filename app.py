@@ -189,7 +189,6 @@ def import_pools():
         return jsonify(error_list), 422
 
 
-
 @app.route("/init_db")
 @login_required
 def init_db():
