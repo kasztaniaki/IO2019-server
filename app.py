@@ -11,7 +11,6 @@ import response
 from functools import wraps
 
 
-
 def login_required(f):
     @wraps(f)
     def wrapper(*args, **kwargs):
