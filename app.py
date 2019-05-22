@@ -210,7 +210,7 @@ def remove_pool():
 
 
 @app.route("/import", methods=["POST"])
-@login_required
+# @login_required
 def import_pools():
     if "pools_csv" not in request.files or "force" not in request.args:
         return redirect(request.url)
