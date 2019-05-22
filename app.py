@@ -98,7 +98,7 @@ def edit_user():
 
 @app.route("/users/remove_user", methods=["POST"])
 @login_required
-def edit_user():
+def remove_user():
     if "id" not in request.args:
         return "User ID not provided in request", 400
     try:
