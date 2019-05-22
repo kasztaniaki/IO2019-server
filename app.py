@@ -33,7 +33,7 @@ def world():
         return "W!"
 
 
-@app.route("/login", methods=["GET", "POST"])
+@app.route("/signin", methods=["GET", "POST"])
 def get_token():
 
     data= request.get_json(force = True)
@@ -51,7 +51,7 @@ def get_token():
         response('', 401, mimetype='application/json')
 
 
-@app.route("/s", methods=["GET", "POST"])
+@app.route("/signup", methods=["GET", "POST"])
 def register():
 
     data= request.get_json(force = True)
