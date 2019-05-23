@@ -96,6 +96,7 @@ class Pool(db.Model):
             software = Software.add_software(name)
             pool.add_software(software, version)
 
+    # Method below doesn't return list of software objects! Only list with [ID, Name, Version]
     def get_software_list(self, software=None):
         if software is None:
             return SoftwareList.query.filter(
@@ -295,7 +296,6 @@ class User(db.Model):
         else:
             return False
 
-    # TODO: show all user's reservations IDs
     def get_reservations(self, start_date=date(2019, 1, 1), end_date=date(2099, 12, 31), show_cancelled=True):
         reservation_list = []
 
@@ -363,6 +363,15 @@ class Reservation(db.Model):
 
         self.Cancelled = True
         db.session.commit()
+
+    def set_machine_count(self, machine_count):
+        if machine_count <= self.MachineCount:
+            self.MachineCount = machine_count
+            db.session.commit()
+        else:
+            available_machines = self.Pool.available_machines(self.StartDate, self.EndDate)
+            if machine_count - self.MachineCount > available_machines:
+                raise ValueError("There are not enough available machines in given time frame")
 
     def __repr__(self):
         reservation_object = {
