@@ -159,6 +159,12 @@ class Pool(db.Model):
         if free_machines-machine_count < 0:
             raise ValueError("There are not enough available machines in given time frame")
 
+        if start_date > end_date:
+            raise ValueError("Reservation cannot end before it starts!")
+
+        if start_date < date.now():
+            raise ValueError("Reservation must be set in future")
+
         try:
             reservation = Reservation(
                 PoolID=self.ID,
@@ -378,11 +384,13 @@ class Reservation(db.Model):
             "ID": self.ID,
             "PoolID": self.PoolID,
             "UserID": self.UserID,
-            "StartDate": self.StartDate,
-            "EndDate": self.EndDate,
+            "StartDate": self.StartDate.__str__(),
+            "EndDate": self.EndDate.__str__(),
             "MachineCount": self.MachineCount,
             "Cancelled": self.Cancelled
         }
+        # Reverse to datetime from string with:
+        # dt.strptime("2019-05-22 00:00:00", "%Y-%m-%d %H:%M:%S")
         return json.dumps(reservation_object)
 
 
