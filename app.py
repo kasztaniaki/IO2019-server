@@ -1,13 +1,13 @@
 from flask import jsonify, request, redirect
-from database.dbmodel import Pool, db, Software, OperatingSystem, User, SoftwareList
+from database.dbmodel import Pool, db, Software, OperatingSystem, User, SoftwareList, Reservation
 from parser.csvparser import Parser
 from settings import app
+from datetime import datetime as dt
 
 
 @app.route("/")
 def hello_world():
     return "Hello World!"
-
 
 @app.route("/pools", methods=["GET"])
 def get_pools():
@@ -18,12 +18,12 @@ def get_pools():
 def get_pool():
     if "id" not in request.args:
         return "Pool ID not provided in request", 400
-    id = request.args.get('id')
+    pool_id = request.args.get('id')
     try:
-        pool = Pool.get_pool(id)
+        pool = Pool.get_pool(pool_id)
         return jsonify({"pool": Pool.json(pool)})
     except AttributeError:
-        return "Pool of ID {} doesn't exist".format(id), 404
+        return "Pool of ID {} doesn't exist".format(pool_id), 404
 
 
 @app.route("/add_pool", methods=["POST"])
@@ -89,9 +89,10 @@ def edit_pool():
 def remove_pool():
     if "id" not in request.args:
         return "Pool ID not provided in request", 400
+    pool_id = request.args.get('id')
     try:
-        id = request.args.get('id')
-        Pool.remove_pool(id)
+        pool = Pool.get_pool(pool_id)
+        pool.remove()
     except Exception as e:
         print(e)
         return "Pool of ID {} doesn't exist!".format(id), 404
