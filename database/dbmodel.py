@@ -291,6 +291,16 @@ class User(db.Model):
     Surname = db.Column(db.String(80))
     IsAdmin = db.Column(db.Boolean)
 
+
+    @staticmethod
+    def username_password_mathc(_email, _password):
+        user= User.query.filter_by(Email=_email).filter_by(Password=_password).first()
+        if user is None:
+            return False
+        else:
+            return True
+
+
     @staticmethod
     def get_user(user_id):
         return User.query.filter(User.ID == user_id).first()
@@ -298,7 +308,7 @@ class User(db.Model):
     @staticmethod
     def get_user_by_email(email):
         return User.query.filter(User.Email == email).first()
-
+      
     @staticmethod
     def add_user(email, password, name, surname, is_admin=False):
         try:
