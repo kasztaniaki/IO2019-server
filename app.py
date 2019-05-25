@@ -1,14 +1,13 @@
 from flask import jsonify, request, redirect, Response
 import os
-from database.dbmodel import Pool, db, User
 from database.dbmodel import Pool, db, Software, OperatingSystem, User, SoftwareList
 from parser.csvparser import Parser
 from settings import app
 from sqlalchemy import  exc as sa_exc
 import jwt
 import datetime
-from functools import wraps
 from datetime import datetime as dt
+from functools import wraps
 
 
 def login_required(f):
@@ -74,7 +73,6 @@ def register():
     return jsonify({'test': result})
 
 
-
 @app.route("/pools", methods=["GET"])
 @login_required
 def get_pools():
@@ -105,9 +103,9 @@ def add_pool():
                              request.json.get('Description', ''),
                              request.json.get('Enabled', False)
                              )
-        os = request.json.get('OSName', '')
-        if os:
-            operating_system = OperatingSystem.add_operating_system(os)
+        operating_system = request.json.get('OSName', '')
+        if operating_system:
+            operating_system = OperatingSystem.add_operating_system(operating_system)
             pool.set_operating_system(operating_system)
 
         installed_software = request.json.get('InstalledSoftware', [])
@@ -128,9 +126,9 @@ def edit_pool():
     if not request.json:
         return "Pool data not provided", 400
 
-    id = request.args.get('id')
+    pool_id = request.args.get('id')
     try:
-        pool = Pool.edit_pool(id,
+        pool = Pool.edit_pool(pool_id,
                               request.json['ID'],
                               request.json['Name'],
                               request.json.get('MaximumCount', ''),
@@ -139,9 +137,9 @@ def edit_pool():
                               )
         pool.edit_software(request.json.get('InstalledSoftware', []))
 
-        os = request.json.get('OSName', '')
-        if os:
-            operating_system = OperatingSystem.add_operating_system(os)
+        operating_system = request.json.get('OSName', '')
+        if operating_system:
+            operating_system = OperatingSystem.add_operating_system(operating_system)
             pool.set_operating_system(operating_system)
 
         return "Pool successfully edited", 200
@@ -149,7 +147,7 @@ def edit_pool():
         return "Pool of given ID already exists", 422
     except AttributeError as e:
         print(e)
-        return "Pool of ID {} doesn't exist".format(id), 404
+        return "Pool of ID {} doesn't exist".format(pool_id), 404
 
 
 @app.route("/remove_pool", methods=["GET"])
