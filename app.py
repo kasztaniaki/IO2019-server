@@ -1,4 +1,4 @@
-from flask import jsonify, request, redirect
+from flask import jsonify, request, redirect, Response
 import os
 from database.dbmodel import Pool, db, User
 from database.dbmodel import Pool, db, Software, OperatingSystem, User, SoftwareList
@@ -7,7 +7,6 @@ from settings import app
 from sqlalchemy import  exc as sa_exc
 import jwt
 import datetime
-import response
 from functools import wraps
 from datetime import datetime as dt
 
@@ -49,7 +48,7 @@ def get_token():
         return token
 
     else:
-        response('', 401, mimetype='application/json')
+        Response('', 401, mimetype='application/json')
 
 
 @app.route("/s", methods=["GET", "POST"])
