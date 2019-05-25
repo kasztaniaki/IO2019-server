@@ -241,6 +241,7 @@ def import_pools():
 def init_db():
     # Test method for clearing and creating new empty database
     # Also can create database.db from scratch
+    print("Działam kuwa!!!")
     db.drop_all()
     db.session.commit()
     db.create_all()
