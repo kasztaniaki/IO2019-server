@@ -9,6 +9,7 @@ from datetime import datetime as dt
 def hello_world():
     return "Hello World!"
 
+
 @app.route("/pools", methods=["GET"])
 def get_pools():
     return jsonify({"pools": Pool.get_table()})
