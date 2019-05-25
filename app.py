@@ -241,7 +241,6 @@ def import_pools():
 def init_db():
     # Test method for clearing and creating new empty database
     # Also can create database.db from scratch
-    print("Działam kuwa!!!")
     db.drop_all()
     db.session.commit()
     db.create_all()
@@ -251,8 +250,11 @@ def init_db():
 
 
 # tricky, but omits the login_required decorator at startup
-list(filter(lambda val: isinstance(val, types.FunctionType) and val.__name__ == "init_db",
-            init_db.__dict__.values()))[0]()
+@app.before_first_request
+def initialize():
+    list(filter(lambda val: isinstance(val, types.FunctionType) and val.__name__ == "init_db",
+                init_db.__dict__.values()))[0]()
+
 
 if __name__ == "__main__":
     app.secret_key = os.urandom(12)
