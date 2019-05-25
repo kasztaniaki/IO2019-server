@@ -49,26 +49,33 @@ class Pool(db.Model):
 
         return pool
 
-    def remove_pool(self):
-        pool_id = self.ID
+    def remove(self):
         try:
-            pool = Pool.query.filter(Pool.ID == pool_id).first()
-            software_list = SoftwareList.query.filter(SoftwareList.PoolID == pool_id).all()
+            software_list = SoftwareList.query.filter(SoftwareList.PoolID == self.ID).all()
             for software in software_list:
                 db.session.delete(software)
-            db.session.delete(pool)
-            db.session.commit()
+                db.session.commit()
         except orm.exc.UnmappedInstanceError:
-            print("Pool of ID:'" + pool_id + "' doesn't exist")
-            raise ValueError
+            print("Pool of ID:'" + self.ID + "' has no software installed")
 
         try:
-            reservation_list = Reservation.query.filter(Reservation.PoolID == pool_id).all()
+            reservation_list = self.get_reservations(start_date=date.now())
+            for reservation in reservation_list:
+                reservation.Cancelled = True
+                db.session.commit()
+        except orm.exc.UnmappedInstanceError:
+            print("Pool of ID:'" + self.ID + "' has no future reservations")
+
+        try:
+            reservation_list = Reservation.query.filter(Reservation.PoolID == self.ID).all()
             for reservation in reservation_list:
                 reservation.PoolID = ''
                 db.session.commit()
         except orm.exc.UnmappedInstanceError:
-            print("Pool of ID:'" + pool_id + "' has no reservations")
+            print("Pool of ID:'" + self.ID + "' has no reservations")
+
+        db.session.delete(self)
+        db.session.commit()
 
     def edit_pool(self, new_id=None, name=None, max_count=None, description=None, enabled=None):
         old_id = self.ID
@@ -205,8 +212,28 @@ class Pool(db.Model):
         except sa_exc.IntegrityError:
             print("Reservation of pool nr: " + self.ID + " cannot be added")
 
-    def get_reservations(self):
-        return Reservation.query.filter(Reservation.PoolID == self.ID).all()
+    def get_reservations(self, start_date=date(2019, 1, 1), end_date=date(2099, 12, 31), show_cancelled=False):
+        reservation_list = []
+
+        if show_cancelled:
+            query = Reservation.query.filter(
+                Reservation.PoolID == self.ID,
+                Reservation.StartDate < end_date,
+                Reservation.EndDate > start_date,
+            ).with_entities(Reservation.ID).all()
+        else:
+            query = Reservation.query.filter(
+                Reservation.PoolID == self.ID,
+                Reservation.StartDate < end_date,
+                Reservation.EndDate > start_date,
+                Reservation.Cancelled is False
+            ).with_entities(Reservation.ID).all()
+
+        for reservation_id in query:
+            reservation = Reservation.get_reservation(reservation_id[0])
+            reservation_list.append(reservation)
+
+        return reservation_list
 
     def available_machines(self, start_date, end_date):
         if self.Enabled is False:
@@ -289,6 +316,26 @@ class User(db.Model):
         except sa_exc.IntegrityError:
             print("User with email: '" + email + "' already exists")
 
+    def remove(self):
+        try:
+            reservation_list = self.get_reservations(start_date=date.now())
+            for reservation in reservation_list:
+                reservation.Cancelled = True
+                db.session.commit()
+        except orm.exc.UnmappedInstanceError:
+            print("User of ID:'" + self.ID + "' has no future reservations")
+
+        try:
+            reservation_list = Reservation.query.filter(Reservation.UserID == self.ID).all()
+            for reservation in reservation_list:
+                reservation.UserID = ''
+                db.session.commit()
+        except orm.exc.UnmappedInstanceError:
+            print("User of ID:'" + self.ID + "' has no reservations")
+
+        db.session.delete(self)
+        db.session.commit()
+
     def set_email(self, email):
         if email != self.Email:
             try:
@@ -332,7 +379,7 @@ class User(db.Model):
         else:
             return False
 
-    def get_reservations(self, start_date=date(2019, 1, 1), end_date=date(2099, 12, 31), show_cancelled=True):
+    def get_reservations(self, start_date=date(2019, 1, 1), end_date=date(2099, 12, 31), show_cancelled=False):
         reservation_list = []
 
         if show_cancelled:
