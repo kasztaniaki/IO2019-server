@@ -74,20 +74,22 @@ def register():
 @app.route("/users/edit_user", methods=["POST"])
 @login_required
 def edit_user():
-    if "id" not in request.args:
+    if "email" not in request.args:
         return "User ID not provided in request", 400
     if not request.json:
         return "User data not provided", 400
 
-    id = request.args.get('id')
+    print(request.headers)
+
+    email = request.args.get('email')
     try:
-        user = User.get_user(id)
+        user = User.get_user_by_email(email)
         user.set_name(request.json.get('new_name', user.Name))
         user.set_surname(request.json.get('new_surname', user.Surname))
         user.set_password(request.json.get('new_password', user.Password))
-        if request.args.get('token'):
-            user.set_email(request.json.get('new_mail', user.Email))
-            user.set_admin_permissions(request.json.get('is_admin', user.IsAdmin))
+        # if request.args.get('token'):
+        #     user.set_email(request.json.get('new_mail', user.Email))
+        #     user.set_admin_permissions(request.json.get('is_admin', user.IsAdmin))
         return "User successfully edited", 200
     except ValueError:
         return "User of given e-mail already exists", 422
@@ -111,7 +113,7 @@ def remove_user():
 
 
 @app.route("/pools", methods=["GET"])
-# @login_required
+@login_required
 def get_pools():
     return jsonify({"pools": Pool.get_table()})
 
@@ -226,7 +228,7 @@ def import_pools():
     else:
         parser.parse_file(False)
 
-    if parser.is_list_empty():
+    if parser.is_list_empty() or force == 'true':
         return "No errors"
     else:
         error_list = parser.get_error_list()
