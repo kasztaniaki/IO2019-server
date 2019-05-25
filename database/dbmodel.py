@@ -49,8 +49,8 @@ class Pool(db.Model):
 
         return pool
 
-    @staticmethod
-    def remove_pool(pool_id):
+    def remove_pool(self):
+        pool_id = self.ID
         try:
             pool = Pool.query.filter(Pool.ID == pool_id).first()
             software_list = SoftwareList.query.filter(SoftwareList.PoolID == pool_id).all()
@@ -62,25 +62,48 @@ class Pool(db.Model):
             print("Pool of ID:'" + pool_id + "' doesn't exist")
             raise ValueError
 
-    @staticmethod
-    def edit_pool(pool_id, new_id, name, max_count, description, enabled):
         try:
-            pool = Pool.query.filter(Pool.ID == pool_id).first()
-            pool.ID = new_id
-            pool.Name = name
-            pool.MaximumCount = max_count
-            pool.Description = description
-            pool.Enabled = enabled
+            reservation_list = Reservation.query.filter(Reservation.PoolID == pool_id).all()
+            for reservation in reservation_list:
+                reservation.PoolID = ''
+                db.session.commit()
+        except orm.exc.UnmappedInstanceError:
+            print("Pool of ID:'" + pool_id + "' has no reservations")
+
+    def edit_pool(self, new_id=None, name=None, max_count=None, description=None, enabled=None):
+        old_id = self.ID
+
+        if new_id is None:
+            new_id = self.ID
+        if name is None:
+            name = self.Name
+        if max_count is None:
+            max_count = self.MaximumCount
+        if description is None:
+            description = self.Description
+        if enabled is None:
+            enabled = self.Enabled
+
+        try:
+            self.ID = new_id
+            self.Name = name
+            self.MaximumCount = max_count
+            self.Description = description
+            self.Enabled = enabled
             db.session.commit()
         except sa_exc.IntegrityError:
-            print("Pool with ID:'" + pool_id + "' already exists")
+            print("Pool with ID:'" + new_id + "' already exists")
             raise ValueError
 
-        for software in SoftwareList.query.filter(SoftwareList.PoolID == pool_id).all():
+        software_list = SoftwareList.query.filter(SoftwareList.PoolID == old_id).all()
+        for software in software_list:
             software.PoolID = new_id
             db.session.commit()
 
-        return pool
+        reservation_list = Reservation.query.filter(Reservation.PoolID == old_id).all()
+        for reservation in reservation_list:
+            reservation.PoolID = new_id
+            db.session.commit()
 
     def edit_software(self, new_software_list):
         pool = Pool.query.filter(Pool.ID == self.ID).first()
@@ -182,6 +205,9 @@ class Pool(db.Model):
         except sa_exc.IntegrityError:
             print("Reservation of pool nr: " + self.ID + " cannot be added")
 
+    def get_reservations(self):
+        return Reservation.query.filter(Reservation.PoolID == self.ID).all()
+
     def available_machines(self, start_date, end_date):
         if self.Enabled is False:
             raise AttributeError("Disabled Pool has no available machines")
@@ -241,6 +267,10 @@ class User(db.Model):
     @staticmethod
     def get_user(user_id):
         return User.query.filter(User.ID == user_id).first()
+
+    @staticmethod
+    def get_user_by_email(email):
+        return User.query.filter(User.Email == email).first()
 
     @staticmethod
     def add_user(email, password, name, surname, is_admin=False):
