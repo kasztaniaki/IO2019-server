@@ -256,5 +256,3 @@ if __name__ == "__main__":
                 init_db.__dict__.values()))[0]()
     app.secret_key = os.urandom(12)
     app.run(debug=True)
-    list(filter(lambda val: isinstance(val, types.FunctionType) and val.__name__ == "init_db",
-                init_db.__dict__.values()))[0]()
