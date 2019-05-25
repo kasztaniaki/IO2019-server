@@ -1,5 +1,6 @@
 from flask import jsonify, request, redirect, Response
 import os
+import types
 from database.dbmodel import Pool, db, Software, OperatingSystem, User, SoftwareList
 from parser.csvparser import Parser
 from settings import app
@@ -249,6 +250,8 @@ def init_db():
 
 
 if __name__ == "__main__":
-    init_db()
+    # tricky, but omits the login_required decorator at startup
+    list(filter(lambda val: isinstance(val, types.FunctionType) and val.__name__ == "init_db",
+                init_db.__dict__.values()))[0]()
     app.secret_key = os.urandom(12)
     app.run(debug=True)
