@@ -250,9 +250,10 @@ def init_db():
     return "Database reseted"
 
 
+# tricky, but omits the login_required decorator at startup
+list(filter(lambda val: isinstance(val, types.FunctionType) and val.__name__ == "init_db",
+            init_db.__dict__.values()))[0]()
+
 if __name__ == "__main__":
-    # tricky, but omits the login_required decorator at startup
-    list(filter(lambda val: isinstance(val, types.FunctionType) and val.__name__ == "init_db",
-                init_db.__dict__.values()))[0]()
     app.secret_key = os.urandom(12)
     app.run(debug=True)
