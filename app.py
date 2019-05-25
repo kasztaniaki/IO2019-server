@@ -113,7 +113,7 @@ def remove_user():
 
 
 @app.route("/pools", methods=["GET"])
-@login_required
+# @login_required
 def get_pools():
     return jsonify({"pools": Pool.get_table()})
 
@@ -236,7 +236,7 @@ def import_pools():
 
 
 @app.route("/init_db")
-# @login_required
+@login_required
 def init_db():
     # Test method for clearing and creating new empty database
     # Also can create database.db from scratch
@@ -249,5 +249,6 @@ def init_db():
 
 
 if __name__ == "__main__":
+    init_db()
     app.secret_key = os.urandom(12)
     app.run(debug=True)
