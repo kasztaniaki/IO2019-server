@@ -42,7 +42,7 @@ def get_token():
         user = User.get_user_by_email(email)
         token = jwt.encode({'exp': expiration_date, 'email': user.Email},
                            app.config['SECRET_KEY'], algorithm='HS256')
-        return token, User.json(user)
+        return jsonify({'data': User.json(user), 'token': token})
 
     else:
         Response('', 401, mimetype='application/json')
