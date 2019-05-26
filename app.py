@@ -73,14 +73,12 @@ def register():
 @app.route("/users/edit_user", methods=["POST"])
 @login_required
 def edit_user():
-    # if "email" not in request.args:
-    if "email" not in request.json:
+    if "email" not in request.args:
         return "User ID not provided in request", 400
     if not request.json:
         return "User data not provided", 400
 
-    # email = request.args.get('email')
-    email = request.json.get('email')
+    email = request.args.get('email')
     try:
         user = User.get_user_by_email(email)
         user.set_name(request.json.get('new_name', user.Name))
@@ -120,8 +118,22 @@ def get_pools():
 
 
 @app.route("/users", methods=["GET"])
+@login_required
 def get_users():
     return jsonify({"users": User.get_table()})
+
+
+@app.route("/user", methods=["GET"])
+@login_required
+def get_user():
+    if "email" not in request.args:
+        return "User email not provided in request", 400
+    email = request.args.get('email')
+    try:
+        user = User.get_user_by_email(email)
+        return jsonify({"user": User.json(user)})
+    except AttributeError:
+        return "User of email '{}' doesn't exist".format(email), 404
 
 
 @app.route("/pool", methods=["GET"])
