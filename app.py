@@ -42,10 +42,10 @@ def get_token():
         user = User.get_user_by_email(email)
         token = jwt.encode({'exp': expiration_date, 'email': user.Email},
                            app.config['SECRET_KEY'], algorithm='HS256')
-        return jsonify({'data': User.json(user), 'token': token})
+        return jsonify({'data': User.json(user), 'token': token.decode('utf-8')})
 
     else:
-        Response('', 401, mimetype='application/json')
+        Response('Invalid credentials provided', 401, mimetype='application/json')
 
 
 @app.route("/users/signup", methods=["GET", "POST"])
