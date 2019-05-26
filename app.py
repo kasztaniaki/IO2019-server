@@ -40,10 +40,9 @@ def get_token():
     if match:
         expiration_date = datetime.datetime.utcnow() + datetime.timedelta(hours=5)
         user = User.get_user_by_email(email)
-        token = jwt.encode({'exp': expiration_date, 'is_admin': user.IsAdmin,
-                            'firstname': user.Name, 'lastname': user.Surname},
+        token = jwt.encode({'exp': expiration_date, 'email': user.Email},
                            app.config['SECRET_KEY'], algorithm='HS256')
-        return token
+        return token, User.json(user)
 
     else:
         Response('', 401, mimetype='application/json')
@@ -86,8 +85,9 @@ def edit_user():
         user.set_surname(request.json.get('surname', user.Surname))
         user.set_password(request.json.get('password', user.Password))
 
-        if jwt.decode(request.headers['Auth-Token'], app.config['SECRET_KEY'],
-                      algorithm='HS256')['is_admin']:
+        logged_user_email = jwt.decode(request.headers['Auth-Token'], app.config['SECRET_KEY'],
+                      algorithm='HS256')['email']
+        if User.get_user_by_email(logged_user_email).IsAdmin:
             user.set_email(request.json.get('email', user.Email))
             user.set_admin_permissions(request.json.get('is_admin', user.IsAdmin))
         return "User successfully edited", 200
