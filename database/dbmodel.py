@@ -282,7 +282,6 @@ class User(db.Model):
 
     def json(self):
         return {
-            "ID": self.ID,
             "Email": self.Email,
             "Name": self.Name,
             "Surname": self.Surname,
