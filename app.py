@@ -81,9 +81,9 @@ def edit_user():
     email = request.args.get('email')
     try:
         user = User.get_user_by_email(email)
-        user.set_name(request.json.get('name', user.Name))
-        user.set_surname(request.json.get('surname', user.Surname))
-        user.set_password(request.json.get('password', user.Password))
+        user.set_name(request.json.get('new_name', user.Name))
+        user.set_surname(request.json.get('new_surname', user.Surname))
+        user.set_password(request.json.get('new_password', user.Password))
 
         logged_user_email = jwt.decode(request.headers['Auth-Token'], app.config['SECRET_KEY'],
                       algorithm='HS256')['email']
@@ -119,7 +119,7 @@ def get_pools():
 
 
 @app.route("/users", methods=["GET"])
-@login_required
+# @login_required
 def get_users():
     return jsonify({"users": User.get_table()})
 
