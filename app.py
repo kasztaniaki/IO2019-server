@@ -211,6 +211,28 @@ def show_reservations():
     return jsonify({"reservation": reservation_json_list})
 
 
+@app.route("/reservations/cancel", methods=["POST"])
+def cancel_reservation():
+    if not request.json:
+        return "Cancel data not provided", 400
+
+    try:
+        reservation_id = request.json['ReservationID']
+        cancellation_type = request.json['Type']
+    except KeyError as e:
+        return "Value of {} missing in given JSON".format(e), 400
+
+    if cancellation_type == 'one':
+        reservation = Reservation.get_reservation(reservation_id)
+        try:
+            reservation.cancel()
+        except AttributeError:
+            return "Reservation of ID {} was already cancelled".format(str(reservation_id)), 200
+        return "Reservation of ID {} successfully cancelled".format(str(reservation_id)), 200
+    else:
+        return 400
+
+
 @app.route("/init_db")
 # @login_required
 def init_db():

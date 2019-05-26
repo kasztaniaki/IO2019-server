@@ -468,7 +468,7 @@ class Reservation(db.Model):
 
     def cancel(self):
         if self.Cancelled:
-            print("Reservation " + self.ID + " is already cancelled")
+            print("Reservation " + str(self.ID) + " is already cancelled")
             raise AttributeError
 
         self.Cancelled = True
