@@ -79,17 +79,11 @@ class Pool(db.Model):
 
     def edit_pool(self, new_id=None, name=None, max_count=None, description=None, enabled=None):
         old_id = self.ID
-
-        if new_id is None:
-            new_id = self.ID
-        if name is None:
-            name = self.Name
-        if max_count is None:
-            max_count = self.MaximumCount
-        if description is None:
-            description = self.Description
-        if enabled is None:
-            enabled = self.Enabled
+        new_id = new_id if new_id else self.ID
+        name = name if name else self.Name
+        max_count = max_count if max_count else self.MaximumCount
+        description = description if description else self.Description
+        enabled = enabled if enabled else self.Enabled
 
         try:
             self.ID = new_id
