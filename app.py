@@ -242,7 +242,7 @@ def import_pools():
     else:
         parser.parse_file(False)
 
-    if parser.is_list_empty() or force == 'true':
+    if parser.is_list_empty() or force == "true":
         return "No errors"
     else:
         error_list = parser.get_error_list()
