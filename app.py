@@ -13,19 +13,15 @@ from functools import wraps
 def login_required(f):
     @wraps(f)
     def wrapper(*args, **kwargs):
-        token = request.args.get('token')
+        token = request.headers['Auth-Token']
         try:
-            jwt.decode(token, app.config['SECRET_KEY'])
+            jwt.decode(token, app.config['SECRET_KEY'], algorithm='HS256')
             return f(*args, **kwargs)
-        except:
+        except Exception as e:
+            print(e)
             return jsonify({'error': 'not logged'}), 401
 
     return wrapper
-
-
-@app.route("/home")
-def hello_world():
-    return "Hello World!"
 
 
 @app.route("/")
@@ -42,8 +38,10 @@ def get_token():
     match = User.username_password_match(email, password)
 
     if match:
-        expiration_date = datetime.datetime.utcnow() + datetime.timedelta(seconds=100)
-        token = jwt.encode({'exp': expiration_date}, app.config['SECRET_KEY'], algorithm='HS256')
+        expiration_date = datetime.datetime.utcnow() + datetime.timedelta(hours=5)
+        is_admin = User.get_user_by_email(email).IsAdmin
+        token = jwt.encode({'exp': expiration_date, 'is_admin': is_admin},
+                           app.config['SECRET_KEY'], algorithm='HS256')
         return token
 
     else:
@@ -75,22 +73,24 @@ def register():
 @app.route("/users/edit_user", methods=["POST"])
 @login_required
 def edit_user():
-    if "email" not in request.args:
+    # if "email" not in request.args:
+    if "email" not in request.json:
         return "User ID not provided in request", 400
     if not request.json:
         return "User data not provided", 400
 
-    print(request.headers)
-
-    email = request.args.get('email')
+    # email = request.args.get('email')
+    email = request.json.get('email')
     try:
         user = User.get_user_by_email(email)
         user.set_name(request.json.get('new_name', user.Name))
         user.set_surname(request.json.get('new_surname', user.Surname))
         user.set_password(request.json.get('new_password', user.Password))
-        # if request.args.get('token'):
-        #     user.set_email(request.json.get('new_mail', user.Email))
-        #     user.set_admin_permissions(request.json.get('is_admin', user.IsAdmin))
+
+        if jwt.decode(request.headers['Auth-Token'], app.config['SECRET_KEY'],
+                      algorithm='HS256')['is_admin']:
+            user.set_email(request.json.get('new_mail', user.Email))
+            user.set_admin_permissions(request.json.get('is_admin', user.IsAdmin))
         return "User successfully edited", 200
     except ValueError:
         return "User of given e-mail already exists", 422
@@ -114,7 +114,7 @@ def remove_user():
 
 
 @app.route("/pools", methods=["GET"])
-# @login_required
+@login_required
 def get_pools():
     return jsonify({"pools": Pool.get_table()})
 
@@ -213,7 +213,7 @@ def remove_pool():
 
 
 @app.route("/import", methods=["POST"])
-# @login_required
+@login_required
 def import_pools():
     if "pools_csv" not in request.files or "force" not in request.args:
         return redirect(request.url)
@@ -249,9 +249,9 @@ def init_db():
     return "Database reseted"
 
 
-# tricky, but omits the login_required decorator at startup
 @app.before_first_request
 def initialize():
+    # tricky, but omits the login_required decorator at startup
     list(filter(lambda val: isinstance(val, types.FunctionType) and val.__name__ == "init_db",
                 init_db.__dict__.values()))[0]()
 
