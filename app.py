@@ -1,6 +1,6 @@
 from flask import jsonify, request, redirect, Response
 import os
-from database.dbmodel import Pool, db, Software, OperatingSystem, User, SoftwareList
+from database.dbmodel import Pool, db, Software, OperatingSystem, User, SoftwareList, Reservation
 from parser.csvparser import Parser
 from settings import app
 from sqlalchemy import  exc as sa_exc
@@ -8,6 +8,8 @@ import jwt
 import datetime
 from datetime import datetime as dt
 from functools import wraps
+
+date_conversion_format = "%Y-%m-%dT%H:%M:%S.%fZ"
 
 
 def login_required(f):
@@ -185,6 +187,28 @@ def import_pools():
     else:
         error_list = parser.get_error_list()
         return jsonify(error_list), 422
+
+
+@app.route("/reservations", methods=["GET"])
+def show_reservations():
+    if "startDate" not in request.args:
+        return '"Start Date" not provided in request', 400
+    if "endDate" not in request.args:
+        return '"End Date" not provided in request', 400
+    if "showCancelled" not in request.args:
+        return '"Show cancelled" not provided in request', 400
+
+    if request.args.get("showCancelled") == "true":
+        show_cancelled = True
+    else:
+        show_cancelled = False
+
+    start_date = dt.strptime(request.args.get("startDate"), date_conversion_format)
+    end_date = dt.strptime(request.args.get("endDate"), date_conversion_format)
+
+    reservation_list = Reservation.get_reservations(start_date, end_date, show_cancelled)
+    reservation_json_list = ([Reservation.json(reservation) for reservation in reservation_list])
+    return jsonify({"reservation": reservation_json_list})
 
 
 @app.route("/init_db")

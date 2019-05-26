@@ -79,17 +79,11 @@ class Pool(db.Model):
 
     def edit_pool(self, new_id=None, name=None, max_count=None, description=None, enabled=None):
         old_id = self.ID
-
-        if new_id is None:
-            new_id = self.ID
-        if name is None:
-            name = self.Name
-        if max_count is None:
-            max_count = self.MaximumCount
-        if description is None:
-            description = self.Description
-        if enabled is None:
-            enabled = self.Enabled
+        new_id = new_id if new_id else self.ID
+        name = name if name else self.Name
+        max_count = max_count if max_count else self.MaximumCount
+        description = description if description else self.Description
+        enabled = enabled if enabled else self.Enabled
 
         try:
             self.ID = new_id
@@ -449,6 +443,29 @@ class Reservation(db.Model):
     def get_reservation(reservation_id):
         return Reservation.query.filter(Reservation.ID == reservation_id).first()
 
+    @staticmethod
+    def get_reservations(start_date=date(2019, 1, 1), end_date=date(2099, 12, 31), show_cancelled=False):
+        reservation_list = []
+
+        if show_cancelled is True:
+            query = Reservation.query.filter(
+                Reservation.StartDate > start_date,
+                Reservation.EndDate < end_date
+            ).with_entities(Reservation.ID).all()
+        else:
+            query = Reservation.query.filter(
+                Reservation.Cancelled != True,
+                Reservation.StartDate > start_date,
+                Reservation.EndDate < end_date
+            ).with_entities(Reservation.ID).all()
+
+        print(query)
+        for reservation_id in query:
+            reservation = Reservation.get_reservation(reservation_id[0])
+            reservation_list.append(reservation)
+
+        return reservation_list
+
     def cancel(self):
         if self.Cancelled:
             print("Reservation " + self.ID + " is already cancelled")
@@ -466,6 +483,22 @@ class Reservation(db.Model):
             if machine_count - self.MachineCount > available_machines:
                 raise ValueError("There are not enough available machines in given time frame")
 
+    def json(self):
+        conversion_format = "%Y-%m-%dT%H:%M:%S.%f"
+        return {
+            "ReservationID": self.ID,
+            "Name": self.User.Name if self.User else '',
+            "Surname": self.User.Surname if self.User else '',
+            "UserID": self.UserID if self.UserID else '',
+            "UserEmail": self.User.Email if self.User else '',
+            "PoolName": self.Pool.Name if self.Pool else '',
+            "PoolID": self.PoolID if self.PoolID else '',
+            "StartDate": (self.StartDate.strftime(conversion_format))[0:23]+'Z',
+            "EndDate": (self.EndDate.strftime(conversion_format))[0:23]+'Z',
+            "Count": self.MachineCount,
+            "Cancelled": "true" if self.Cancelled else "false"
+        }
+
     def __repr__(self):
         reservation_object = {
             "ID": self.ID,
@@ -476,8 +509,6 @@ class Reservation(db.Model):
             "MachineCount": self.MachineCount,
             "Cancelled": self.Cancelled
         }
-        # Reverse to datetime from string with:
-        # dt.strptime("2019-05-22 00:00:00", "%Y-%m-%d %H:%M:%S")
         return json.dumps(reservation_object)
 
 
