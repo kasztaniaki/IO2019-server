@@ -106,7 +106,7 @@ def edit_user():
 def remove_user():
     if "id" not in request.args:
         return "User ID not provided in request", 400
-      user_id = request.args.get('id')
+    user_id = request.args.get('id')
     try:
         user=User.get_user(user_id)
         user.remove()
@@ -114,6 +114,7 @@ def remove_user():
         print(e)
         return "User of ID {} doesn't exist!".format(id), 404
     return "User of ID {} successfully deleted".format(id), 200
+
 
 @app.route("/pools", methods=["GET"])
 @login_required
