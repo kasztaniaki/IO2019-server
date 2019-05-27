@@ -338,19 +338,10 @@ class User(db.Model):
                 db.session.commit()
         except orm.exc.UnmappedInstanceError:
             print("User of ID:'" + self.ID + "' has no reservations")
+            raise ValueError
 
         db.session.delete(self)
         db.session.commit()
-
-    @staticmethod
-    def remove_user(user_id):
-        try:
-            user = User.query.filter(User.ID == user_id).first()
-            db.session.delete(user)
-            db.session.commit()
-        except orm.exc.UnmappedInstanceError:
-            print("Pool of ID: '{}' doesn't exist".format(user_id))
-            raise ValueError
 
     def set_email(self, email):
         if email != self.Email:
