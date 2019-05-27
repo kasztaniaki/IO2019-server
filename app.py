@@ -217,20 +217,52 @@ def cancel_reservation():
         return "Cancel data not provided", 400
 
     try:
-        reservation_id = request.json['ReservationID']
+        request_res_id = request.json['ReservationID']
         cancellation_type = request.json['Type']
     except KeyError as e:
         return "Value of {} missing in given JSON".format(e), 400
 
     if cancellation_type == 'one':
+        if isinstance(request_res_id, list):
+            return 'Inappropriate "ReservationID" value received', 400
+
+        reservation_id = request_res_id
         reservation = Reservation.get_reservation(reservation_id)
+
         try:
             reservation.cancel()
         except AttributeError:
             return "Reservation of ID {} was already cancelled".format(str(reservation_id)), 200
+
         return "Reservation of ID {} successfully cancelled".format(str(reservation_id)), 200
+
     else:
-        return 400
+        if isinstance(request_res_id, list):
+            for reservation_id in request_res_id:
+                reservation = Reservation.get_reservation(reservation_id)
+                try:
+                    reservation.cancel()
+                except AttributeError:
+                    print("Reservation of ID {} was already cancelled".format(str(reservation_id)))
+
+            return "Reservations of ID {} successfully cancelled".format(str(request_res_id)), 200
+        else:
+            id_list = []
+
+            reservation = Reservation.get_reservation(request_res_id)
+            if reservation:
+                try:
+                    reservation_list = reservation.get_series(start_date=dt(2019, 5, 21), series_type=cancellation_type)
+                except ValueError:
+                    return 'Inappropriate "type" value received', 400
+
+                for series_element in reservation_list:
+                    id_list.append(series_element.ID)
+
+                return jsonify(id_list), 202
+
+            else:
+                return "Reservations of ID {} doesn't exist".format(str(request_res_id)), 400
 
 
 @app.route("/init_db")

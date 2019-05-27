@@ -384,27 +384,19 @@ class User(db.Model):
             return False
 
     def get_reservations(self, start_date=date(2019, 1, 1), end_date=date(2099, 12, 31), show_cancelled=False):
-        reservation_list = []
-
         if show_cancelled is True:
-            query = Reservation.query.filter(
+            return Reservation.query.filter(
                 Reservation.UserID == self.ID,
                 Reservation.StartDate > start_date,
                 Reservation.EndDate < end_date
             ).with_entities(Reservation.ID).all()
         else:
-            query = Reservation.query.filter(
+            return Reservation.query.filter(
                 Reservation.UserID == self.ID,
                 Reservation.StartDate > start_date,
                 Reservation.EndDate < end_date,
                 Reservation.Cancelled is not True
-            ).with_entities(Reservation.ID).all()
-
-        for reservation_id in query:
-            reservation = Reservation.get_reservation(reservation_id[0])
-            reservation_list.append(reservation)
-
-        return reservation_list
+            ).all()
 
     def json(self):
         return {
@@ -473,6 +465,39 @@ class Reservation(db.Model):
 
         self.Cancelled = True
         db.session.commit()
+
+    def get_series(self, start_date=date.now(), end_date=date(2099, 12, 31), series_type='series'):
+        # series is defined by the same pool, same user and same weekday
+        reservation_list = []
+
+        if User and Pool and series_type == 'series':
+            query_list = Reservation.query.filter(
+                Reservation.StartDate > start_date,
+                Reservation.EndDate < end_date,
+                Reservation.PoolID == self.PoolID,
+                Reservation.UserID == self.UserID,
+                Reservation.Cancelled is not True
+            ).all()
+
+            for reservation in query_list:
+                if reservation.StartDate.weekday() == self.StartDate.weekday() \
+                        and reservation.StartDate.time() == self.StartDate.time() \
+                        and reservation.EndDate.weekday() == self.EndDate.weekday() \
+                        and reservation.EndDate.time() == self.EndDate.time():
+                    print("ID:" + str(reservation.ID))
+                    reservation_list.append(reservation)
+        elif User and Pool and series_type == 'all':
+            reservation_list = Reservation.query.filter(
+                Reservation.StartDate > start_date,
+                Reservation.EndDate < end_date,
+                Reservation.PoolID == self.PoolID,
+                Reservation.UserID == self.UserID,
+                Reservation.Cancelled is not True
+            ).all()
+        else:
+            raise ValueError("series_type must be 'series' or 'all'")
+
+        return reservation_list
 
     def set_machine_count(self, machine_count):
         if machine_count <= self.MachineCount:
