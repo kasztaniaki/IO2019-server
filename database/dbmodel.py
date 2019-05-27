@@ -285,15 +285,17 @@ class User(db.Model):
     Surname = db.Column(db.String(80))
     IsAdmin = db.Column(db.Boolean)
 
+    @staticmethod
+    def get_table():
+        return [User.json(user) for user in User.query.all()]
 
     @staticmethod
-    def username_password_mathc(_email, _password):
-        user= User.query.filter_by(Email=_email).filter_by(Password=_password).first()
+    def username_password_match(_email, _password):
+        user = User.query.filter_by(Email=_email).filter_by(Password=_password).first()
         if user is None:
             return False
         else:
             return True
-
 
     @staticmethod
     def get_user(user_id):
@@ -302,7 +304,7 @@ class User(db.Model):
     @staticmethod
     def get_user_by_email(email):
         return User.query.filter(User.Email == email).first()
-      
+    
     @staticmethod
     def add_user(email, password, name, surname, is_admin=False):
         try:
@@ -340,6 +342,16 @@ class User(db.Model):
         db.session.delete(self)
         db.session.commit()
 
+    @staticmethod
+    def remove_user(user_id):
+        try:
+            user = User.query.filter(User.ID == user_id).first()
+            db.session.delete(user)
+            db.session.commit()
+        except orm.exc.UnmappedInstanceError:
+            print("Pool of ID: '{}' doesn't exist".format(user_id))
+            raise ValueError
+
     def set_email(self, email):
         if email != self.Email:
             try:
@@ -361,6 +373,11 @@ class User(db.Model):
     def set_surname(self, surname):
         if surname != self.Surname:
             self.Surname = surname
+            db.session.commit()
+
+    def set_admin_permissions(self, is_admin):
+        if self.IsAdmin != is_admin:
+            self.IsAdmin = is_admin
             db.session.commit()
 
     def give_admin_permissions(self):
@@ -408,7 +425,6 @@ class User(db.Model):
 
     def json(self):
         return {
-            "ID": self.ID,
             "Email": self.Email,
             "Name": self.Name,
             "Surname": self.Surname,
