@@ -1,7 +1,7 @@
 from flask import jsonify, request, redirect, Response
 import os
 import types
-from database.dbmodel import Pool, db, Software, OperatingSystem, User, SoftwareList
+from database.dbmodel import Pool, db, Software, OperatingSystem, User, SoftwareList, Reservation
 from parser.csvparser import Parser
 from settings import app
 from sqlalchemy import exc as sa_exc
