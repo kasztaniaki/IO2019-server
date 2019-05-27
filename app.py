@@ -1,6 +1,5 @@
 import jwt
 import os
-import sys
 import types
 import datetime
 
@@ -121,12 +120,6 @@ def remove_user():
 @login_required
 def get_pools():
     return jsonify({"pools": Pool.get_table()})
-
-
-@app.route("/reservations", methods=["GET"])
-def get_reservations():
-    reservation_json_list = [reservation.__repr__() for reservation in Reservation.query.all()]
-    return jsonify({"reservation": reservation_json_list})
 
 
 @app.route("/users", methods=["GET"])
