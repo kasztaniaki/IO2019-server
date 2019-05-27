@@ -1,13 +1,17 @@
-from flask import jsonify, request, redirect, Response
-import os
-import types
-from database.dbmodel import Pool, db, Software, OperatingSystem, User, SoftwareList
-from parser.csvparser import Parser
-from settings import app
-from sqlalchemy import exc as sa_exc
 import jwt
+import os
+import sys
+import types
 import datetime
+
 from functools import wraps
+from sqlalchemy import exc as sa_exc
+from flask import jsonify, request, redirect, Response
+
+import database.mock_db as mock_db
+from settings import app
+from parser.csvparser import Parser
+from database.dbmodel import Pool, db, Software, OperatingSystem, User, SoftwareList, Reservation
 
 
 def login_required(f):
@@ -119,8 +123,14 @@ def get_pools():
     return jsonify({"pools": Pool.get_table()})
 
 
+@app.route("/reservations", methods=["GET"])
+def get_reservations():
+    reservation_json_list = ([Reservation.json(reservation) for reservation in Reservation.query.all()])
+    return jsonify({"reservation": reservation_json_list})
+
+
 @app.route("/users", methods=["GET"])
-# @login_required
+@login_required
 def get_users():
     return jsonify({"users": User.get_table()})
 
@@ -261,6 +271,8 @@ def init_db():
     db.create_all()
     User.add_user("admin@admin.example", "ala123456", "Admin", "Admin", True)
     db.session.commit()
+    if '--mock' in sys.argv:
+        mock_db.gen_mock_data()
     return "Database reseted"
 
 

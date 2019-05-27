@@ -1,1 +1,1 @@
-web: gunicorn app:app --capture-output --log-level debug
+web: gunicorn 'app:app(--mock)' --capture-output --log-level debug
