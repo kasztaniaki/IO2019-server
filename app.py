@@ -7,6 +7,7 @@ from settings import app
 from sqlalchemy import exc as sa_exc
 import jwt
 import datetime
+from datetime import datetime as dt
 from functools import wraps
 
 
@@ -69,7 +70,7 @@ def register():
 
     return jsonify({'test': result})
 
-
+  
 @app.route("/users/edit_user", methods=["POST"])
 @login_required
 def edit_user():
@@ -103,14 +104,14 @@ def edit_user():
 def remove_user():
     if "id" not in request.args:
         return "User ID not provided in request", 400
+      user_id = request.args.get('id')
     try:
-        id = request.args.get('id')
-        User.remove_user(id)
+        user=User.get_user(user_id)
+        user.remove()
     except Exception as e:
         print(e)
         return "User of ID {} doesn't exist!".format(id), 404
     return "User of ID {} successfully deleted".format(id), 200
-
 
 @app.route("/pools", methods=["GET"])
 @login_required
@@ -142,12 +143,12 @@ def get_user():
 def get_pool():
     if "id" not in request.args:
         return "Pool ID not provided in request", 400
-    id = request.args.get('id')
+    pool_id = request.args.get('id')
     try:
-        pool = Pool.get_pool(id)
+        pool = Pool.get_pool(pool_id)
         return jsonify({"pool": Pool.json(pool)})
     except AttributeError:
-        return "Pool of ID {} doesn't exist".format(id), 404
+        return "Pool of ID {} doesn't exist".format(pool_id), 404
 
 
 @app.route("/add_pool", methods=["POST"])
@@ -163,9 +164,9 @@ def add_pool():
                              request.json.get('Description', ''),
                              request.json.get('Enabled', False)
                              )
-        os = request.json.get('OSName', '')
-        if os:
-            operating_system = OperatingSystem.add_operating_system(os)
+        operating_system = request.json.get('OSName', '')
+        if operating_system:
+            operating_system = OperatingSystem.add_operating_system(operating_system)
             pool.set_operating_system(operating_system)
 
         installed_software = request.json.get('InstalledSoftware', [])
@@ -187,9 +188,9 @@ def edit_pool():
     if not request.json:
         return "Pool data not provided", 400
 
-    id = request.args.get('id')
+    pool_id = request.args.get('id')
     try:
-        pool = Pool.edit_pool(id,
+        pool = Pool.edit_pool(pool_id,
                               request.json['ID'],
                               request.json['Name'],
                               request.json.get('MaximumCount', ''),
@@ -198,9 +199,9 @@ def edit_pool():
                               )
         pool.edit_software(request.json.get('InstalledSoftware', []))
 
-        os = request.json.get('OSName', '')
-        if os:
-            operating_system = OperatingSystem.add_operating_system(os)
+        operating_system = request.json.get('OSName', '')
+        if operating_system:
+            operating_system = OperatingSystem.add_operating_system(operating_system)
             pool.set_operating_system(operating_system)
 
         return "Pool successfully edited", 200
@@ -208,7 +209,7 @@ def edit_pool():
         return "Pool of given ID already exists", 422
     except AttributeError as e:
         print(e)
-        return "Pool of ID {} doesn't exist".format(id), 404
+        return "Pool of ID {} doesn't exist".format(pool_id), 404
 
 
 @app.route("/remove_pool", methods=["GET"])
@@ -216,9 +217,10 @@ def edit_pool():
 def remove_pool():
     if "id" not in request.args:
         return "Pool ID not provided in request", 400
+    pool_id = request.args.get('id')
     try:
-        id = request.args.get('id')
-        Pool.remove_pool(id)
+        pool = Pool.get_pool(pool_id)
+        pool.remove()
     except Exception as e:
         print(e)
         return "Pool of ID {} doesn't exist!".format(id), 404
