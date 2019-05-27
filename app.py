@@ -125,7 +125,7 @@ def get_pools():
 
 @app.route("/reservations", methods=["GET"])
 def get_reservations():
-    reservation_json_list = ([Reservation.json(reservation) for reservation in Reservation.query.all()])
+    reservation_json_list = (reservation.__repr__() for reservation in Reservation.query.all()])
     return jsonify({"reservation": reservation_json_list})
 
 
