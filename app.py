@@ -271,7 +271,7 @@ def init_db():
     db.create_all()
     User.add_user("admin@admin.example", "ala123456", "Admin", "Admin", True)
     db.session.commit()
-    if '--mock' in sys.argv:
+    if 'mock' in sys.argv:
         mock_db.gen_mock_data()
     return "Database reseted"
 
