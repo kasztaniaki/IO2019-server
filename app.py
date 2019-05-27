@@ -7,7 +7,6 @@ from settings import app
 from sqlalchemy import exc as sa_exc
 import jwt
 import datetime
-from datetime import datetime as dt
 from functools import wraps
 
 
@@ -70,7 +69,7 @@ def register():
 
     return jsonify({'test': result})
 
-  
+
 @app.route("/users/edit_user", methods=["POST"])
 @login_required
 def edit_user():
@@ -87,9 +86,9 @@ def edit_user():
         user.set_password(request.json.get('new_password', user.Password))
 
         logged_user_email = jwt.decode(request.headers['Auth-Token'], app.config['SECRET_KEY'],
-                      algorithm='HS256')['email']
+                                       algorithm='HS256')['email']
         if User.get_user_by_email(logged_user_email).IsAdmin:
-            user.set_email(request.json.get('email', user.Email))
+            user.set_email(request.json.get('new_email', user.Email))
             user.set_admin_permissions(request.json.get('is_admin', user.IsAdmin))
         return "User successfully edited", 200
     except ValueError:
@@ -104,14 +103,15 @@ def edit_user():
 def remove_user():
     if "id" not in request.args:
         return "User ID not provided in request", 400
-      user_id = request.args.get('id')
+    user_id = request.args.get('id')
     try:
-        user=User.get_user(user_id)
+        user = User.get_user(user_id)
         user.remove()
     except Exception as e:
         print(e)
         return "User of ID {} doesn't exist!".format(id), 404
     return "User of ID {} successfully deleted".format(id), 200
+
 
 @app.route("/pools", methods=["GET"])
 @login_required
