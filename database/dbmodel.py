@@ -1,5 +1,5 @@
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import CheckConstraint, orm, exc as sa_exc
+from sqlalchemy import orm, exc as sa_exc
 import json
 from settings import app
 from datetime import datetime as date

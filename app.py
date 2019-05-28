@@ -2,11 +2,9 @@ import jwt
 import os
 import types
 import database.mock_db as mock_db
-from database.dbmodel import Pool, db, Software, OperatingSystem, User, SoftwareList, Reservation
+from database.dbmodel import Pool, db, Software, OperatingSystem, User, Reservation
 from parser.csvparser import Parser
 from settings import app
-from sqlalchemy import exc as sa_exc
-import jwt
 import datetime
 
 from functools import wraps
@@ -368,10 +366,9 @@ def create_reservation():
 
         if pool and user:
             reservation = pool.add_reservation(user, machine_count, start_date, end_date)
+            return jsonify({'ReservationID': reservation.ID}), 200
     except Exception as e:
         return str(e), 404
-
-    return jsonify({'ReservationID': reservation.ID}), 200
 
 
 @app.route("/reservations/edit", methods=["POST"])
