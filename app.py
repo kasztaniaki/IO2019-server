@@ -1,6 +1,7 @@
 import jwt
 import os
 import types
+import database.mock_db as mock_db
 from database.dbmodel import Pool, db, Software, OperatingSystem, User, SoftwareList, Reservation
 from parser.csvparser import Parser
 from settings import app
@@ -361,7 +362,6 @@ def create_reservation():
     except ValueError:
         return 'Inappropriate value in json', 400
 
-    print("Dupa")
     try:
         pool = Pool.get_pool(pool_id)
         user = User.get_user_by_email(email)
