@@ -104,16 +104,16 @@ def edit_user():
 @app.route("/users/remove_user", methods=["POST"])
 @login_required
 def remove_user():
-    if "id" not in request.args:
+    if "email" not in request.args:
         return "User ID not provided in request", 400
-    user_id = request.args.get('id')
+    user_email = request.args.get('email')
     try:
-        user = User.get_user(user_id)
+        user = User.get_user_by_email(user_email)
         user.remove()
     except Exception as e:
         print(e)
-        return "User of ID {} doesn't exist!".format(id), 404
-    return "User of ID {} successfully deleted".format(id), 200
+        return "User with email: {} doesn't exist!".format(id), 404
+    return "User with email: {} successfully deleted".format(id), 200
 
 
 @app.route("/pools", methods=["GET"])
