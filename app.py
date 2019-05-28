@@ -86,7 +86,8 @@ def edit_user():
         user = User.get_user_by_email(email)
         user.set_name(request.json.get('new_name', user.Name))
         user.set_surname(request.json.get('new_surname', user.Surname))
-        user.set_password(request.json.get('new_password', user.Password))
+        password = request.json.get('new_password', user.Password)
+        user.set_password(user.Password if not password else password)
 
         logged_user_email = jwt.decode(request.headers['Auth-Token'], app.config['SECRET_KEY'],
                                        algorithm='HS256')['email']
