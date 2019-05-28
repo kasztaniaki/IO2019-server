@@ -1,0 +1,244 @@
+{
+  "reservations": [
+    {
+      "UserID": 6,
+      "PoolID": "s7n-example",
+      "StartDate": "1558949700",
+      "EndDate": "1558955100",
+      "Count": 17,
+      "Cancelled": false
+    },
+    {
+      "UserID": 3,
+      "PoolID": "s7n-another-example",
+      "StartDate": "1558955700",
+      "EndDate": "1558961100",
+      "Count": 10,
+      "Cancelled": false
+    },
+    {
+      "UserID": 2,
+      "PoolID": "s10n-ex",
+      "StartDate": "1558973700",
+      "EndDate": "1558979100",
+      "Count": 35,
+      "Cancelled": false
+    },
+    {
+      "UserID": 3,
+      "PoolID": "s10n-ex",
+      "StartDate": "1559047800",
+      "EndDate": "1559053200",
+      "Count": 20,
+      "Cancelled": false
+    },
+    {
+      "UserID": 5,
+      "PoolID": "s7n-another-example",
+      "StartDate": "1559054400",
+      "EndDate": "1559059800",
+      "Count": 20,
+      "Cancelled": false
+    },
+    {
+      "UserID": 4,
+      "PoolID": "s7n-example",
+      "StartDate": "1559060100",
+      "EndDate": "1559065500",
+      "Count": 24,
+      "Cancelled": false
+    },
+    {
+      "UserID": 4,
+      "PoolID": "s7n-another-example",
+      "StartDate": "1558944000",
+      "EndDate": "1558949400",
+      "Count": 25,
+      "Cancelled": false
+    },
+    {
+      "UserID": 2,
+      "PoolID": "s7n-example",
+      "StartDate": "1558944000",
+      "EndDate": "1558949400",
+      "Count": 15,
+      "Cancelled": false
+    },
+    {
+      "UserID": 3,
+      "PoolID": "s10n-ex",
+      "StartDate": "1558944000",
+      "EndDate": "1558949400",
+      "Count": 20,
+      "Cancelled": false
+    },
+    {
+      "UserID": 3,
+      "PoolID": "s10n-ex",
+      "StartDate": "1558955700",
+      "EndDate": "1558961400",
+      "Count": 23,
+      "Cancelled": false
+    },
+    {
+      "UserID": 7,
+      "PoolID": "s10n-ex",
+      "StartDate": "1558961400",
+      "EndDate": "1558966800",
+      "Count": 25,
+      "Cancelled": false
+    },
+    {
+      "UserID": 6,
+      "PoolID": "s10n-ex",
+      "StartDate": "1559054400",
+      "EndDate": "1559060100",
+      "Count": 27,
+      "Cancelled": false
+    },
+    {
+      "UserID": 5,
+      "PoolID": "s7n-example",
+      "StartDate": "1559054400",
+      "EndDate": "1559059800",
+      "Count": 20,
+      "Cancelled": false
+    },
+    {
+      "UserID": 6,
+      "PoolID": "s7n-example",
+      "StartDate": "1559042100",
+      "EndDate": "1559047500",
+      "Count": 22,
+      "Cancelled": false
+    },
+    {
+      "UserID": 2,
+      "PoolID": "s7n-example",
+      "StartDate": "1559030400",
+      "EndDate": "1559035800",
+      "Count": 15,
+      "Cancelled": false
+    },
+    {
+      "UserID": 3,
+      "PoolID": "s7n-another-example",
+      "StartDate": "1559030400",
+      "EndDate": "1559035800",
+      "Count": 10,
+      "Cancelled": false
+    },
+    {
+      "UserID": 4,
+      "PoolID": "s7n-another-example",
+      "StartDate": "1559042100",
+      "EndDate": "1559047500",
+      "Count": 8,
+      "Cancelled": false
+    },
+    {
+      "UserID": 3,
+      "PoolID": "s7n-another-example",
+      "StartDate": "1559116800",
+      "EndDate": "1559122200",
+      "Count": 15,
+      "Cancelled": false
+    },
+    {
+      "UserID": 2,
+      "PoolID": "s7n-example",
+      "StartDate": "1559116800",
+      "EndDate": "1559122200",
+      "Count": 16,
+      "Cancelled": false
+    },
+    {
+      "UserID": 2,
+      "PoolID": "s7n-example",
+      "StartDate": "1559122500",
+      "EndDate": "1559127900",
+      "Count": 17,
+      "Cancelled": false
+    },
+    {
+      "UserID": 7,
+      "PoolID": "s10n-ex",
+      "StartDate": "1559122500",
+      "EndDate": "1559127900",
+      "Count": 27,
+      "Cancelled": false
+    },
+    {
+      "UserID": 6,
+      "PoolID": "s10n-ex",
+      "StartDate": "1559134200",
+      "EndDate": "1559139600",
+      "Count": 25,
+      "Cancelled": false
+    },
+    {
+      "UserID": 2,
+      "PoolID": "s7n-example",
+      "StartDate": "1559134200",
+      "EndDate": "1559139600",
+      "Count": 20,
+      "Cancelled": false
+    },
+    {
+      "UserID": 4,
+      "PoolID": "s7n-example",
+      "StartDate": "1559238600",
+      "EndDate": "1559244000",
+      "Count": 25,
+      "Cancelled": false
+    },
+    {
+      "UserID": 3,
+      "PoolID": "s7n-another-example",
+      "StartDate": "1559238600",
+      "EndDate": "1559244000",
+      "Count": 15,
+      "Cancelled": false
+    },
+    {
+      "UserID": 6,
+      "PoolID": "s7n-another-example",
+      "StartDate": "1559152200",
+      "EndDate": "1559157600",
+      "Count": 13,
+      "Cancelled": false
+    },
+    {
+      "UserID": 6,
+      "PoolID": "s10n-ex",
+      "StartDate": "1559227200",
+      "EndDate": "1559232600",
+      "Count": 15,
+      "Cancelled": false
+    },
+    {
+      "UserID": 5,
+      "PoolID": "s10n-ex",
+      "StartDate": "1559203200",
+      "EndDate": "1559208600",
+      "Count": 15,
+      "Cancelled": false
+    },
+    {
+      "UserID": 3,
+      "PoolID": "s10n-ex",
+      "StartDate": "1559295300",
+      "EndDate": "1559300700",
+      "Count": 15,
+      "Cancelled": false
+    },
+    {
+      "UserID": 5,
+      "PoolID": "s7n-example",
+      "StartDate": "1559295300",
+      "EndDate": "1559300700",
+      "Count": 15,
+      "Cancelled": false
+    }
+  ]
+}
