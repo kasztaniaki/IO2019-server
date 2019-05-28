@@ -241,7 +241,7 @@ class Pool(db.Model):
             Reservation.PoolID == self.ID,
             Reservation.StartDate < end_date,
             Reservation.EndDate > start_date,
-            Reservation.Cancelled is False
+            Reservation.Cancelled != True
         ).with_entities(Reservation.MachineCount).all()
 
         taken_machines = 0
@@ -452,7 +452,12 @@ class Reservation(db.Model):
 
     @staticmethod
     def get_reservation(reservation_id):
-        return Reservation.query.filter(Reservation.ID == reservation_id).first()
+        reservation = Reservation.query.filter(Reservation.ID == reservation_id).first()
+
+        if reservation:
+            return reservation
+        else:
+            raise ValueError('Reservation of ID "{}" does not exist'.format(str(reservation_id)))
 
     @staticmethod
     def get_reservations(start_date=date(2019, 1, 1), end_date=date(2099, 12, 31), show_cancelled=False):
@@ -518,14 +523,40 @@ class Reservation(db.Model):
 
         return reservation_list
 
-    def set_machine_count(self, machine_count):
-        if machine_count <= self.MachineCount:
-            self.MachineCount = machine_count
-            db.session.commit()
+    def set_date(self, start_date=None, end_date=None):
+        start_date = start_date if start_date else self.StartDate
+        end_date = end_date if end_date else self.EndDate
+
+        if end_date < start_date:
+            raise ValueError("StartDate must be before EndDate")
+
+    def edit(self, start_date=None, end_date=None, machine_count=None):
+        start_date = start_date if start_date else self.StartDate
+        end_date = end_date if end_date else self.EndDate
+        machine_count = machine_count if machine_count else self.MachineCount
+
+        if machine_count < 1:
+            raise ValueError('"Machine Count" have to be a value above 0')
+        if end_date <= start_date:
+            raise ValueError('"End Date" must take place after "Start Date"')
+        if start_date < date.now():
+            raise ValueError('Reservation must take place in future')
+
+        available_machines = self.Pool.available_machines(start_date, end_date)
+        print(available_machines)
+
+        if (start_date <= self.StartDate <= end_date) or (start_date <= self.EndDate <= end_date):
+            machines_to_reserve = machine_count - self.MachineCount
         else:
-            available_machines = self.Pool.available_machines(self.StartDate, self.EndDate)
-            if machine_count - self.MachineCount > available_machines:
-                raise ValueError("There are not enough available machines in given time frame")
+            machines_to_reserve = machine_count
+
+        if machines_to_reserve > available_machines:
+            raise ValueError("There are not enough available machines in given time frame")
+
+        self.StartDate = start_date
+        self.EndDate = end_date
+        self.MachineCount = machine_count
+        db.session.commit()
 
     def json(self):
         conversion_format = "%Y-%m-%dT%H:%M:%S.%f"

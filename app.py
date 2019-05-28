@@ -371,7 +371,34 @@ def create_reservation():
     except Exception as e:
         return str(e), 404
 
-    return "Reservations of ID {} successfully created".format(str(reservation.ID)), 200
+    return jsonify({'ReservationID': reservation.ID}), 200
+
+
+@app.route("/reservations/edit", methods=["POST"])
+def edit_reservation():
+    if not request.json:
+        return "Create data not provided", 400
+
+    try:
+        reservation_id = int(request.json['ReservationID'])
+        start_date = dt.strptime(request.json["StartDate"], date_conversion_format)
+        end_date = dt.strptime(request.json["EndDate"], date_conversion_format)
+        machine_count = int(request.json['Count'])
+    except KeyError as e:
+        return "Value of {} missing in given JSON".format(e), 400
+    except ValueError:
+        return 'Inappropriate value in json', 400
+
+    try:
+        reservation = Reservation.get_reservation(reservation_id)
+    except Exception as e:
+        return str(e), 404
+    try:
+        reservation.edit(start_date, end_date, machine_count)
+    except Exception as e:
+        return str(e), 400
+
+    return "Reservations of ID {} successfully edited".format(str(reservation.ID)), 200
 
 
 @app.route("/init_db")
