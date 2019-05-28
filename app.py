@@ -1,4 +1,4 @@
-from flask import jsonify, request, redirect, Response
+import jwt
 import os
 import types
 from database.dbmodel import Pool, db, Software, OperatingSystem, User, SoftwareList, Reservation
@@ -7,8 +7,15 @@ from settings import app
 from sqlalchemy import exc as sa_exc
 import jwt
 import datetime
-from datetime import datetime as dt
+
 from functools import wraps
+from sqlalchemy import exc as sa_exc
+from flask import jsonify, request, redirect, Response
+
+import database.mock_db as mock_db
+from settings import app
+from parser.csvparser import Parser
+from database.dbmodel import Pool, db, Software, OperatingSystem, User, SoftwareList, Reservation
 
 date_conversion_format = "%Y-%m-%dT%H:%M:%S.%fZ"
 
@@ -77,7 +84,7 @@ def register():
 
     return jsonify({'test': result})
 
-  
+
 @app.route("/users/edit_user", methods=["POST"])
 @login_required
 def edit_user():
@@ -98,9 +105,9 @@ def edit_user():
         user.set_password(request.json.get('new_password', user.Password))
 
         logged_user_email = jwt.decode(request.headers['Auth-Token'], app.config['SECRET_KEY'],
-                      algorithm='HS256')['email']
+                                       algorithm='HS256')['email']
         if User.get_user_by_email(logged_user_email).IsAdmin:
-            user.set_email(request.json.get('email', user.Email))
+            user.set_email(request.json.get('new_email', user.Email))
             user.set_admin_permissions(request.json.get('is_admin', user.IsAdmin))
         return "User successfully edited", 200
     except ValueError:
@@ -132,7 +139,7 @@ def get_pools():
 
 
 @app.route("/users", methods=["GET"])
-# @login_required
+@login_required
 def get_users():
     return jsonify({"users": User.get_table()})
 
@@ -381,6 +388,8 @@ def init_db():
     db.create_all()
     User.add_user("admin@admin.example", "ala123456", "Admin", "Admin", True)
     db.session.commit()
+    if bool(int(os.environ.get('MOCK', 0))):
+        mock_db.gen_mock_data()
     return "Database reseted"
 
 

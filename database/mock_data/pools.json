@@ -1,0 +1,200 @@
+{
+  "pools": [
+    {
+      "Enabled": true,
+      "ID": "s7n-example",
+      "InstalledSoftware": [
+        [
+          "View Agent",
+          "6.2.2"
+        ],
+        [
+          "Chrome",
+          "61.0"
+        ],
+        [
+          "Libre Office",
+          "5.4.1.2"
+        ],
+        [
+          "Adobe Reader DC",
+          "17.012"
+        ],
+        [
+          "JRE",
+          "8u144"
+        ]
+      ],
+      "MaximumCount": 35,
+      "Name": "Example Pool",
+      "OSName": "Win7",
+      "Description": ""
+    },
+    {
+      "Enabled": true,
+      "ID": "s7n-another-example",
+      "InstalledSoftware": [
+        [
+          "View Agent",
+          "6.2.2"
+        ],
+        [
+          "Libre Office",
+          "6.0.1"
+        ],
+        [
+          "Firefox",
+          "58.0.2"
+        ],
+        [
+          "Adobe Reader",
+          "18.011"
+        ],
+        [
+          "JDK",
+          "7u40"
+        ],
+        [
+          "Python",
+          "3.6.4"
+        ],
+        [
+          "Adobe Flash",
+          "29.0"
+        ],
+        [
+          "Apache Tomcat",
+          "7.0"
+        ],
+        [
+          "Weka",
+          "3.6.10"
+        ],
+        [
+          "Prolog",
+          "6.4.1"
+        ]
+      ],
+      "MaximumCount": 100,
+      "Name": "Another Example Pool",
+      "OSName": "Ubuntu",
+      "Description": ""
+    },
+    {
+      "Enabled": true,
+      "ID": "s10n-ex",
+      "InstalledSoftware": [
+        [
+          "View Agent",
+          "6.2.2"
+        ],
+        [
+          "View Client",
+          "4.6.0"
+        ],
+        [
+          "Firefox",
+          "56.0.2"
+        ],
+        [
+          "LibreOffice",
+          "5.4.1.2"
+        ],
+        [
+          "Google Chrome",
+          "62.0"
+        ],
+        [
+          "Flash Player",
+          "27.0.0"
+        ],
+        [
+          "File Zilla",
+          ""
+        ],
+        [
+          "Java JDK",
+          "8u152"
+        ],
+        [
+          "Apache Ant",
+          "1.9.9"
+        ],
+        [
+          "MS Visio Professional 2016",
+          ""
+        ],
+        [
+          "MS Project Professional 2016",
+          ""
+        ],
+        [
+          "Visual Paradigm 14.2",
+          ""
+        ],
+        [
+          "StarUML",
+          ""
+        ],
+        [
+          "Balsamiq Mockups",
+          "licencja wygasa 26.02.2018"
+        ]
+      ],
+      "MaximumCount": 60,
+      "Name": "Example Ex",
+      "OSName": "Win10",
+      "Description": ""
+    },
+    {
+      "Enabled": false,
+      "ID": "s10n-example",
+      "InstalledSoftware": [
+        [
+          "Google Chrome",
+          "62.0"
+        ],
+        [
+          "Flash Player",
+          "27.0.0"
+        ],
+        [
+          "File Zilla",
+          ""
+        ],
+        [
+          "Java JDK",
+          "8u152"
+        ],
+        [
+          "Apache Ant",
+          "1.9.9"
+        ],
+        [
+          "MS Visio Professional 2016",
+          ""
+        ],
+        [
+          "MS Project Professional 2016",
+          ""
+        ],
+        [
+          "Visual Paradigm 14.2",
+          ""
+        ],
+        [
+          "StarUML",
+          ""
+        ],
+        [
+          "Balsamiq Mockups",
+          "licencja wygasa 26.02.2018"
+        ]
+      ],
+      "MaximumCount": 40,
+      "Name": "Example Ex",
+      "OSName": "Win10",
+      "Description": ""
+    }
+  ]
+}
