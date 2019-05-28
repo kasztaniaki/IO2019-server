@@ -8,7 +8,7 @@ cors = CORS(app, resources={r"/*": {"origins": "*"}})
 
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///database/database.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-SECRET_KEY = os.urandom(32)
+SECRET_KEY = os.environ.get('SECRET',os.urandom(32))
 app.config['SECRET_KEY'] = SECRET_KEY
 
 
