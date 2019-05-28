@@ -11,11 +11,7 @@ import datetime
 from functools import wraps
 from sqlalchemy import exc as sa_exc
 from flask import jsonify, request, redirect, Response
-
-import database.mock_db as mock_db
-from settings import app
-from parser.csvparser import Parser
-from database.dbmodel import Pool, db, Software, OperatingSystem, User, SoftwareList, Reservation
+from datetime import datetime as dt
 
 date_conversion_format = "%Y-%m-%dT%H:%M:%S.%fZ"
 
