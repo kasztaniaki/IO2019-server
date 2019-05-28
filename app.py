@@ -268,8 +268,11 @@ def show_reservations():
     else:
         show_cancelled = False
 
-    start_date = dt.strptime(request.args.get("startDate"), date_conversion_format)
-    end_date = dt.strptime(request.args.get("endDate"), date_conversion_format)
+    try:
+        start_date = dt.strptime(request.args.get("startDate"), date_conversion_format)
+        end_date = dt.strptime(request.args.get("endDate"), date_conversion_format)
+    except ValueError:
+        return 'Inappropriate data value', 400
 
     reservation_list = Reservation.get_reservations(start_date, end_date, show_cancelled)
     reservation_json_list = ([Reservation.json(reservation) for reservation in reservation_list])
