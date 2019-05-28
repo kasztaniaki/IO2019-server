@@ -42,7 +42,12 @@ def get_token():
 
     if match:
         expiration_date = datetime.datetime.utcnow() + datetime.timedelta(hours=5)
-        user = User.get_user_by_email(email)
+
+        try:
+            user = User.get_user_by_email(email)
+        except Exception as e:
+            return str(e), 404
+
         token = jwt.encode({'exp': expiration_date, 'email': user.Email},
                            app.config['SECRET_KEY'], algorithm='HS256')
         return jsonify({'UserData': User.json(user), 'Token': token.decode('utf-8')})
@@ -83,7 +88,11 @@ def edit_user():
 
     email = request.args.get('email')
     try:
-        user = User.get_user_by_email(email)
+        try:
+            user = User.get_user_by_email(email)
+        except Exception as e:
+            return str(e), 404
+
         user.set_name(request.json.get('new_name', user.Name))
         user.set_surname(request.json.get('new_surname', user.Surname))
         user.set_password(request.json.get('new_password', user.Password))
@@ -108,7 +117,7 @@ def remove_user():
         return "User ID not provided in request", 400
     user_id = request.args.get('id')
     try:
-        user=User.get_user(user_id)
+        user = User.get_user(user_id)
         user.remove()
     except Exception as e:
         print(e)
@@ -331,6 +340,35 @@ def cancel_reservation():
 
             else:
                 return "Reservations of ID {} doesn't exist".format(str(request_res_id)), 400
+
+
+@app.route("/reservations/create", methods=["POST"])
+def create_reservation():
+    if not request.json:
+        return "Create data not provided", 400
+
+    try:
+        pool_id = request.json['PoolID']
+        email = request.json['Email']
+        start_date = dt.strptime(request.json["StartDate"], date_conversion_format)
+        end_date = dt.strptime(request.json["EndDate"], date_conversion_format)
+        machine_count = int(request.json['Count'])
+    except KeyError as e:
+        return "Value of {} missing in given JSON".format(e), 400
+    except ValueError:
+        return 'Inappropriate value in json', 400
+
+    print("Dupa")
+    try:
+        pool = Pool.get_pool(pool_id)
+        user = User.get_user_by_email(email)
+
+        if pool and user:
+            reservation = pool.add_reservation(user, machine_count, start_date, end_date)
+    except Exception as e:
+        return str(e), 404
+
+    return "Reservations of ID {} successfully created".format(str(reservation.ID)), 200
 
 
 @app.route("/init_db")

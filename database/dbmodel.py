@@ -29,7 +29,11 @@ class Pool(db.Model):
 
     @staticmethod
     def get_pool(pool_id):
-        return Pool.query.filter(Pool.ID == pool_id).first()
+        pool = Pool.query.filter(Pool.ID == pool_id).first()
+        if pool:
+            return pool
+        else:
+            raise ValueError('Pool of ID "{}" does not exist'.format(str(pool_id)))
 
     @staticmethod
     def add_pool(pool_id, name, maximum_count, description, enabled):
@@ -204,7 +208,7 @@ class Pool(db.Model):
 
             return reservation
         except sa_exc.IntegrityError:
-            print("Reservation of pool nr: " + self.ID + " cannot be added")
+            raise ValueError("Reservation of pool nr: " + self.ID + " cannot be added")
 
     def get_reservations(self, start_date=date(2019, 1, 1), end_date=date(2099, 12, 31), show_cancelled=False):
         reservation_list = []
@@ -299,11 +303,19 @@ class User(db.Model):
 
     @staticmethod
     def get_user(user_id):
-        return User.query.filter(User.ID == user_id).first()
+        user = User.query.filter(User.ID == user_id).first()
+        if user:
+            return user
+        else:
+            raise ValueError('User of ID "{}" does not exist'.format(str(user_id)))
 
     @staticmethod
     def get_user_by_email(email):
-        return User.query.filter(User.Email == email).first()
+        user = User.query.filter(User.Email == email).first()
+        if user:
+            return user
+        else:
+            raise ValueError('User of email "{}" does not exist'.format(str(email)))
     
     @staticmethod
     def add_user(email, password, name, surname, is_admin=False):
