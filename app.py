@@ -69,7 +69,7 @@ def register():
     try:
         User.add_user(email, password, firstname, lastname)
     except sa_exc.IntegrityError:
-        print("User with email: '" + email + "' already exists")
+        return "User with email '{}' already exist".format(email), 404
 
     result = {
         'first': firstname,
