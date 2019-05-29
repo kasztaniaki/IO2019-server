@@ -41,15 +41,15 @@ def get_token():
     email = str(data['email'])
     password = str(data['password'])
 
-    match = User.username_password_match(email, password)
+    try:
+        user = User.get_user_by_email(email)
+    except Exception as e:
+        return str(e), 404
+
+    match = user.check_password(password)
 
     if match:
         expiration_date = datetime.datetime.utcnow() + datetime.timedelta(hours=5)
-
-        try:
-            user = User.get_user_by_email(email)
-        except Exception as e:
-            return str(e), 404
 
         token = jwt.encode({'exp': expiration_date, 'email': user.Email},
                            app.config['SECRET_KEY'], algorithm='HS256')

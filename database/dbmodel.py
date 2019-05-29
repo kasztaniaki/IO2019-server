@@ -294,14 +294,6 @@ class User(db.Model):
         return [User.json(user) for user in User.query.all()]
 
     @staticmethod
-    def username_password_match(_email, _password):
-        user = User.query.filter_by(Email=_email).filter_by(Password=_password).first()
-        if user is None:
-            return False
-        else:
-            return True
-
-    @staticmethod
     def get_user(user_id):
         user = User.query.filter(User.ID == user_id).first()
         if user:
