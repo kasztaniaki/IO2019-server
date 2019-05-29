@@ -260,8 +260,10 @@ def import_pools():
     else:
         parser.parse_file(False)
 
-    if parser.is_list_empty() or force == "true":
-        return "No errors"
+    if parser.is_list_empty():
+        return "No errors", 200
+    if force == "true":
+        return "Forced with errors", 202
     else:
         error_list = parser.get_error_list()
         return jsonify(error_list), 422

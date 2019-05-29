@@ -90,12 +90,15 @@ class Parser:
                 # ID
                 try:
                     pool_id = Parser.extract_name(row[0])
+                    try:
+                        if Pool.get_pool(pool_id):
+                            self.add_error(row_number, row, "Pool with this ID already exists!")
+                            force = False
+                    except ValueError:
+                        pass
 
-                    if Pool.get_pool(pool_id):
-                        self.add_error(row_number, row, "Pool with this ID already exists!")
-                        force = False
-
-                except (ValueError, NameError):
+                except (ValueError, NameError) as e:
+                    print(str(e))
                     self.add_error(row_number, row, "Incorrect 'Pool ID' value!")
                     force = False
 
