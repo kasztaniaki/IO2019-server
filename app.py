@@ -1,5 +1,6 @@
 import jwt
 import os
+import sys
 import types
 import datetime
 
@@ -265,17 +266,18 @@ def init_db():
     db.create_all()
     User.add_user("admin@admin.example", "ala123456", "Admin", "Admin", True)
     db.session.commit()
-    if bool(int(os.environ.get('MOCK', 0))):
+    if bool(int(os.environ.get('MOCK', 0))) or '--mock' in sys.argv:
         mock_db.gen_mock_data()
     return "Database reseted"
 
 
 @app.before_first_request
 def initialize():
-    # tricky, but omits the login_required decorator at startup
+    # tricky, but omits the login_required decorator at startup - added for Heroku reasons
     list(filter(lambda val: isinstance(val, types.FunctionType) and val.__name__ == "init_db",
                 init_db.__dict__.values()))[0]()
 
 
 if __name__ == "__main__":
+    initialize()
     app.run(debug=True)
