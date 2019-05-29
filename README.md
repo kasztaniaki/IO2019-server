@@ -38,14 +38,9 @@ PyCharm:
     While configuring PyCharm project remeber to set your environment as conda
     Your interpreter should be the same as your environment interpreter
 
-To configure generating mock data at startup, set variable:
-- Unix
-
-        export MOCK=1
-        
-- Windows
-
-        set MOCK=1
+To run app in mock mode (generating mock data at startup):
+    
+        python app.py --mock
 
 To run app: 
         
