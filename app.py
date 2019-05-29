@@ -206,13 +206,14 @@ def edit_pool():
 
     pool_id = request.args.get('id')
     try:
-        pool = Pool.edit_pool(pool_id,
-                              request.json['ID'],
-                              request.json['Name'],
-                              request.json.get('MaximumCount', ''),
-                              request.json.get('Description', ''),
-                              request.json.get('Enabled', False)
-                              )
+        pool = Pool.get_pool(pool_id)
+        pool.edit_pool(
+                      request.json['ID'],
+                      request.json['Name'],
+                      request.json.get('MaximumCount', ''),
+                      request.json.get('Description', ''),
+                      request.json.get('Enabled', False)
+                      )
         pool.edit_software(request.json.get('InstalledSoftware', []))
 
         operating_system = request.json.get('OSName', '')
