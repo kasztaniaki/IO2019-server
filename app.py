@@ -2,16 +2,16 @@ import jwt
 import os
 import sys
 import types
-import database.mock_db as mock_db
-from database.dbmodel import Pool, db, Software, OperatingSystem, User, Reservation
-from parser.csvparser import Parser
-from settings import app
 import datetime
 
 from functools import wraps
-from sqlalchemy import exc as sa_exc
 from flask import jsonify, request, redirect, Response
 from datetime import datetime as dt
+
+from settings import app
+from parser.csvparser import Parser
+import database.mock_db as mock_db
+from database.dbmodel import Pool, db, Software, OperatingSystem, User, Reservation
 
 date_conversion_format = "%Y-%m-%dT%H:%M:%S.%fZ"
 
@@ -327,7 +327,7 @@ def cancel_reservation():
                 try:
                     reservation.cancel()
                 except AttributeError:
-                    print("Reservation of ID {} was already cancelled".format(str(reservation_id)))
+                    return "Reservation of ID {} was already cancelled".format(str(reservation_id)), 202
 
             return "Reservations of ID {} successfully cancelled".format(str(request_res_id)), 200
         else:
