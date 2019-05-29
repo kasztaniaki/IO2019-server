@@ -68,8 +68,8 @@ def register():
     password = data['password']
     try:
         User.add_user(email, password, firstname, lastname)
-    except sa_exc.IntegrityError:
-        return "User with email '{}' already exist".format(email), 404
+    except Exception as e:
+        return str(e), 404
 
     result = {
         'first': firstname,

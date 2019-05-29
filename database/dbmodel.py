@@ -324,7 +324,7 @@ class User(db.Model):
 
             return user
         except sa_exc.IntegrityError:
-            print("User with email: '" + email + "' already exists")
+            raise ValueError("User with email '{}' already exist".format(email))
 
     def remove(self):
         try:
