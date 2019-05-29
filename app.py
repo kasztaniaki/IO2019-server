@@ -2,16 +2,18 @@ import jwt
 import os
 import sys
 import types
+import database.mock_db as mock_db
+from database.dbmodel import Pool, db, Software, OperatingSystem, User, Reservation
+from parser.csvparser import Parser
+from settings import app
 import datetime
 
 from functools import wraps
 from sqlalchemy import exc as sa_exc
 from flask import jsonify, request, redirect, Response
+from datetime import datetime as dt
 
-import database.mock_db as mock_db
-from settings import app
-from parser.csvparser import Parser
-from database.dbmodel import Pool, db, Software, OperatingSystem, User, SoftwareList, Reservation
+date_conversion_format = "%Y-%m-%dT%H:%M:%S.%fZ"
 
 
 def login_required(f):
@@ -43,7 +45,12 @@ def get_token():
 
     if match:
         expiration_date = datetime.datetime.utcnow() + datetime.timedelta(hours=5)
-        user = User.get_user_by_email(email)
+
+        try:
+            user = User.get_user_by_email(email)
+        except Exception as e:
+            return str(e), 404
+
         token = jwt.encode({'exp': expiration_date, 'email': user.Email},
                            app.config['SECRET_KEY'], algorithm='HS256')
         return jsonify({'UserData': User.json(user), 'Token': token.decode('utf-8')})
@@ -84,7 +91,11 @@ def edit_user():
 
     email = request.args.get('email')
     try:
-        user = User.get_user_by_email(email)
+        try:
+            user = User.get_user_by_email(email)
+        except Exception as e:
+            return str(e), 404
+
         user.set_name(request.json.get('new_name', user.Name))
         user.set_surname(request.json.get('new_surname', user.Surname))
         password = request.json.get('new_password', user.Password)
@@ -254,6 +265,139 @@ def import_pools():
     else:
         error_list = parser.get_error_list()
         return jsonify(error_list), 422
+
+
+@app.route("/reservations", methods=["GET"])
+def show_reservations():
+    if "startDate" not in request.args:
+        return '"Start Date" not provided in request', 400
+    if "endDate" not in request.args:
+        return '"End Date" not provided in request', 400
+    if "showCancelled" not in request.args:
+        return '"Show cancelled" not provided in request', 400
+
+    if request.args.get("showCancelled") == "true":
+        show_cancelled = True
+    else:
+        show_cancelled = False
+
+    try:
+        start_date = dt.strptime(request.args.get("startDate"), date_conversion_format)
+        end_date = dt.strptime(request.args.get("endDate"), date_conversion_format)
+    except ValueError:
+        return 'Inappropriate data value', 400
+
+    reservation_list = Reservation.get_reservations(start_date, end_date, show_cancelled)
+    reservation_json_list = ([Reservation.json(reservation) for reservation in reservation_list])
+    return jsonify({"reservation": reservation_json_list})
+
+
+@app.route("/reservations/cancel", methods=["POST"])
+def cancel_reservation():
+    if not request.json:
+        return "Cancel data not provided", 400
+
+    try:
+        request_res_id = request.json['ReservationID']
+        cancellation_type = request.json['Type']
+    except KeyError as e:
+        return "Value of {} missing in given JSON".format(e), 400
+
+    if cancellation_type == 'one':
+        if isinstance(request_res_id, list):
+            return 'Inappropriate "ReservationID" value received', 400
+
+        reservation_id = request_res_id
+        reservation = Reservation.get_reservation(reservation_id)
+
+        try:
+            reservation.cancel()
+        except AttributeError:
+            return "Reservation of ID {} was already cancelled".format(str(reservation_id)), 200
+
+        return "Reservation of ID {} successfully cancelled".format(str(reservation_id)), 200
+
+    else:
+        if isinstance(request_res_id, list):
+            for reservation_id in request_res_id:
+                reservation = Reservation.get_reservation(reservation_id)
+                try:
+                    reservation.cancel()
+                except AttributeError:
+                    print("Reservation of ID {} was already cancelled".format(str(reservation_id)))
+
+            return "Reservations of ID {} successfully cancelled".format(str(request_res_id)), 200
+        else:
+            id_list = []
+
+            reservation = Reservation.get_reservation(request_res_id)
+            if reservation:
+                try:
+                    reservation_list = reservation.get_series(start_date=dt(2019, 5, 21), series_type=cancellation_type)
+                except ValueError:
+                    return 'Inappropriate "type" value received', 400
+
+                for series_element in reservation_list:
+                    id_list.append(series_element.ID)
+
+                return jsonify(id_list), 202
+
+            else:
+                return "Reservations of ID {} doesn't exist".format(str(request_res_id)), 400
+
+
+@app.route("/reservations/create", methods=["POST"])
+def create_reservation():
+    if not request.json:
+        return "Create data not provided", 400
+
+    try:
+        pool_id = request.json['PoolID']
+        email = request.json['Email']
+        start_date = dt.strptime(request.json["StartDate"], date_conversion_format)
+        end_date = dt.strptime(request.json["EndDate"], date_conversion_format)
+        machine_count = int(request.json['Count'])
+    except KeyError as e:
+        return "Value of {} missing in given JSON".format(e), 400
+    except ValueError:
+        return 'Inappropriate value in json', 400
+
+    try:
+        pool = Pool.get_pool(pool_id)
+        user = User.get_user_by_email(email)
+
+        if pool and user:
+            reservation = pool.add_reservation(user, machine_count, start_date, end_date)
+            return jsonify({'ReservationID': reservation.ID}), 200
+    except Exception as e:
+        return str(e), 404
+
+
+@app.route("/reservations/edit", methods=["POST"])
+def edit_reservation():
+    if not request.json:
+        return "Create data not provided", 400
+
+    try:
+        reservation_id = int(request.json['ReservationID'])
+        start_date = dt.strptime(request.json["StartDate"], date_conversion_format)
+        end_date = dt.strptime(request.json["EndDate"], date_conversion_format)
+        machine_count = int(request.json['Count'])
+    except KeyError as e:
+        return "Value of {} missing in given JSON".format(e), 400
+    except ValueError:
+        return 'Inappropriate value in json', 400
+
+    try:
+        reservation = Reservation.get_reservation(reservation_id)
+    except Exception as e:
+        return str(e), 404
+    try:
+        reservation.edit(start_date, end_date, machine_count)
+    except Exception as e:
+        return str(e), 400
+
+    return "Reservations of ID {} successfully edited".format(str(reservation.ID)), 200
 
 
 @app.route("/init_db")

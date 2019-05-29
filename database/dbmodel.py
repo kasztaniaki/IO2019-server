@@ -1,5 +1,5 @@
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import CheckConstraint, orm, exc as sa_exc
+from sqlalchemy import orm, exc as sa_exc
 import json
 from settings import app
 from datetime import datetime as date
@@ -29,7 +29,11 @@ class Pool(db.Model):
 
     @staticmethod
     def get_pool(pool_id):
-        return Pool.query.filter(Pool.ID == pool_id).first()
+        pool = Pool.query.filter(Pool.ID == pool_id).first()
+        if pool:
+            return pool
+        else:
+            raise ValueError('Pool of ID "{}" does not exist'.format(str(pool_id)))
 
     @staticmethod
     def add_pool(pool_id, name, maximum_count, description, enabled):
@@ -204,7 +208,7 @@ class Pool(db.Model):
 
             return reservation
         except sa_exc.IntegrityError:
-            print("Reservation of pool nr: " + self.ID + " cannot be added")
+            raise ValueError("Reservation of pool nr: " + self.ID + " cannot be added")
 
     def get_reservations(self, start_date=date(2019, 1, 1), end_date=date(2099, 12, 31), show_cancelled=False):
         reservation_list = []
@@ -237,7 +241,7 @@ class Pool(db.Model):
             Reservation.PoolID == self.ID,
             Reservation.StartDate < end_date,
             Reservation.EndDate > start_date,
-            Reservation.Cancelled is False
+            Reservation.Cancelled != True
         ).with_entities(Reservation.MachineCount).all()
 
         taken_machines = 0
@@ -299,11 +303,19 @@ class User(db.Model):
 
     @staticmethod
     def get_user(user_id):
-        return User.query.filter(User.ID == user_id).first()
+        user = User.query.filter(User.ID == user_id).first()
+        if user:
+            return user
+        else:
+            raise ValueError('User of ID "{}" does not exist'.format(str(user_id)))
 
     @staticmethod
     def get_user_by_email(email):
-        return User.query.filter(User.Email == email).first()
+        user = User.query.filter(User.Email == email).first()
+        if user:
+            return user
+        else:
+            raise ValueError('User of email "{}" does not exist'.format(str(email)))
     
     @staticmethod
     def add_user(email, password, name, surname, is_admin=False):
@@ -392,27 +404,19 @@ class User(db.Model):
             return False
 
     def get_reservations(self, start_date=date(2019, 1, 1), end_date=date(2099, 12, 31), show_cancelled=False):
-        reservation_list = []
-
         if show_cancelled is True:
-            query = Reservation.query.filter(
+            return Reservation.query.filter(
                 Reservation.UserID == self.ID,
                 Reservation.StartDate > start_date,
                 Reservation.EndDate < end_date
             ).with_entities(Reservation.ID).all()
         else:
-            query = Reservation.query.filter(
+            return Reservation.query.filter(
                 Reservation.UserID == self.ID,
                 Reservation.StartDate > start_date,
                 Reservation.EndDate < end_date,
                 Reservation.Cancelled is not True
-            ).with_entities(Reservation.ID).all()
-
-        for reservation_id in query:
-            reservation = Reservation.get_reservation(reservation_id[0])
-            reservation_list.append(reservation)
-
-        return reservation_list
+            ).all()
 
     def json(self):
         return {
@@ -448,24 +452,127 @@ class Reservation(db.Model):
 
     @staticmethod
     def get_reservation(reservation_id):
-        return Reservation.query.filter(Reservation.ID == reservation_id).first()
+        reservation = Reservation.query.filter(Reservation.ID == reservation_id).first()
+
+        if reservation:
+            return reservation
+        else:
+            raise ValueError('Reservation of ID "{}" does not exist'.format(str(reservation_id)))
+
+    @staticmethod
+    def get_reservations(start_date=date(2019, 1, 1), end_date=date(2099, 12, 31), show_cancelled=False):
+        reservation_list = []
+
+        if show_cancelled is True:
+            query = Reservation.query.filter(
+                Reservation.StartDate > start_date,
+                Reservation.EndDate < end_date
+            ).with_entities(Reservation.ID).all()
+        else:
+            query = Reservation.query.filter(
+                Reservation.Cancelled != True,
+                Reservation.StartDate > start_date,
+                Reservation.EndDate < end_date
+            ).with_entities(Reservation.ID).all()
+
+        print(query)
+        for reservation_id in query:
+            reservation = Reservation.get_reservation(reservation_id[0])
+            reservation_list.append(reservation)
+
+        return reservation_list
 
     def cancel(self):
         if self.Cancelled:
-            print("Reservation " + self.ID + " is already cancelled")
+            print("Reservation " + str(self.ID) + " is already cancelled")
             raise AttributeError
 
         self.Cancelled = True
         db.session.commit()
 
-    def set_machine_count(self, machine_count):
-        if machine_count <= self.MachineCount:
-            self.MachineCount = machine_count
-            db.session.commit()
+    def get_series(self, start_date=date.now(), end_date=date(2099, 12, 31), series_type='series'):
+        # series is defined by the same pool, same user and same weekday
+        reservation_list = []
+
+        if User and Pool and series_type == 'series':
+            query_list = Reservation.query.filter(
+                Reservation.StartDate > start_date,
+                Reservation.EndDate < end_date,
+                Reservation.PoolID == self.PoolID,
+                Reservation.UserID == self.UserID,
+                Reservation.Cancelled is not True
+            ).all()
+
+            for reservation in query_list:
+                if reservation.StartDate.weekday() == self.StartDate.weekday() \
+                        and reservation.StartDate.time() == self.StartDate.time() \
+                        and reservation.EndDate.weekday() == self.EndDate.weekday() \
+                        and reservation.EndDate.time() == self.EndDate.time():
+                    print("ID:" + str(reservation.ID))
+                    reservation_list.append(reservation)
+        elif User and Pool and series_type == 'all':
+            reservation_list = Reservation.query.filter(
+                Reservation.StartDate > start_date,
+                Reservation.EndDate < end_date,
+                Reservation.PoolID == self.PoolID,
+                Reservation.UserID == self.UserID,
+                Reservation.Cancelled is not True
+            ).all()
         else:
-            available_machines = self.Pool.available_machines(self.StartDate, self.EndDate)
-            if machine_count - self.MachineCount > available_machines:
-                raise ValueError("There are not enough available machines in given time frame")
+            raise ValueError("series_type must be 'series' or 'all'")
+
+        return reservation_list
+
+    def set_date(self, start_date=None, end_date=None):
+        start_date = start_date if start_date else self.StartDate
+        end_date = end_date if end_date else self.EndDate
+
+        if end_date < start_date:
+            raise ValueError("StartDate must be before EndDate")
+
+    def edit(self, start_date=None, end_date=None, machine_count=None):
+        start_date = start_date if start_date else self.StartDate
+        end_date = end_date if end_date else self.EndDate
+        machine_count = machine_count if machine_count else self.MachineCount
+
+        if machine_count < 1:
+            raise ValueError('"Machine Count" have to be a value above 0')
+        if end_date <= start_date:
+            raise ValueError('"End Date" must take place after "Start Date"')
+        if start_date < date.now():
+            raise ValueError('Reservation must take place in future')
+
+        available_machines = self.Pool.available_machines(start_date, end_date)
+        print(available_machines)
+
+        if (start_date <= self.StartDate <= end_date) or (start_date <= self.EndDate <= end_date):
+            machines_to_reserve = machine_count - self.MachineCount
+        else:
+            machines_to_reserve = machine_count
+
+        if machines_to_reserve > available_machines:
+            raise ValueError("There are not enough available machines in given time frame")
+
+        self.StartDate = start_date
+        self.EndDate = end_date
+        self.MachineCount = machine_count
+        db.session.commit()
+
+    def json(self):
+        conversion_format = "%Y-%m-%dT%H:%M:%S.%f"
+        return {
+            "ReservationID": self.ID,
+            "Name": self.User.Name if self.User else '',
+            "Surname": self.User.Surname if self.User else '',
+            "UserID": self.UserID if self.UserID else '',
+            "UserEmail": self.User.Email if self.User else '',
+            "PoolName": self.Pool.Name if self.Pool else '',
+            "PoolID": self.PoolID if self.PoolID else '',
+            "StartDate": (self.StartDate.strftime(conversion_format))[0:23]+'Z',
+            "EndDate": (self.EndDate.strftime(conversion_format))[0:23]+'Z',
+            "Count": self.MachineCount,
+            "Cancelled": "true" if self.Cancelled else "false"
+        }
 
     def __repr__(self):
         reservation_object = {
@@ -477,8 +584,6 @@ class Reservation(db.Model):
             "MachineCount": self.MachineCount,
             "Cancelled": self.Cancelled
         }
-        # Reverse to datetime from string with:
-        # dt.strptime("2019-05-22 00:00:00", "%Y-%m-%d %H:%M:%S")
         return json.dumps(reservation_object)
 
 
