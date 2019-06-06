@@ -117,16 +117,32 @@ def edit_user():
 @app.route("/users/remove_user", methods=["POST"])
 @login_required
 def remove_user():
-    if "email" not in request.args:
-        return "User ID not provided in request", 400
-    user_email = request.args.get('email')
+    if not request.json:
+        return "User remove data not provided", 400
+
+    user_email = request.json['email']
+    password = request.json['password']
+    token = request.headers['Auth-Token']
+
     try:
-        user = User.get_user_by_email(user_email)
-        user.remove()
+        if password:
+            user = User.get_user_by_email(user_email)
+            if user.check_password(password):
+                user.remove()
+            else:
+                return "Wrong password for user with email: {}".format(user_email), 402
+        else:
+            data = jwt.decode(token, app.config['SECRET_KEY'], algorithm='HS256')
+            user = User.get_user_by_email(data['email'])
+            if user.IsAdmin:
+                User.get_user_by_email(user_email).remove()
+            else:
+                return "No admin privileges", 401
+
     except Exception as e:
         print(e)
-        return "User with email: {} doesn't exist!".format(id), 404
-    return "User with email: {} successfully deleted".format(id), 200
+        return "User with email: {} doesn't exist!".format(user_email), 404
+    return "User with email: {} successfully deleted".format(user_email), 200
 
 
 @app.route("/pools", methods=["GET"])
