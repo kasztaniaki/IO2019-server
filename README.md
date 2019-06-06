@@ -1,10 +1,24 @@
 # IO2019
 Virtual Machine manager for Software Engineering classes (IET 2019).
 
+Used techonogy:
+    
+    Miniconda
+    Python
+    Flask
+    Black (code formatter)
 
-Developement configuration:
 
-Conda:
+Conda environment update:
+    
+    conda env update --name IO2019-server -f=environment.yml
+    
+Conda update:
+
+    conda update -y -n base -c defaults conda
+
+Conda setup:
+    
     Install Miniconda for your OS (linux/macOS) with 3.7 Python:
         https://docs.conda.io/en/latest/miniconda.html
 
@@ -14,17 +28,32 @@ Conda:
     To activate environment in terminal type:
         conda activate IO2019-server #macOS
         source activate IO2019-server #linux
-
-    *Remember to activate your environment every time!*
+    
+    Remember to activate your environment every time before work in terminal!
+    
+    
 
 PyCharm:
+    
     While configuring PyCharm project remeber to set your environment as conda
     Your interpreter should be the same as your environment interpreter
 
+To run app in mock mode (generating mock data at startup):
+    
+        python app.py --mock
+
 To run app: 
-    python app.py
+        
+        python app.py
 
 To run tests: 
-    py.test
+        
+        py.test
 
-
+To run python formatter for directory:
+        
+        black $DIR
+        
+To create database run 'init_db', with (standard):
+        
+        http://127.0.0.1:5000/init_db

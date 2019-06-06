@@ -1,0 +1,40 @@
+{
+  "users": [
+    {
+      "Email": "witold.rakoczy@example.ex",
+      "IsAdmin": false,
+      "Name": "Witold",
+      "Surname": "Rakoczy"
+    },
+    {
+      "Email": "michal.idzik@example.example",
+      "IsAdmin": false,
+      "Name": "Micha\u0142",
+      "Surname": "Idzik"
+    },
+    {
+      "Email": "wojciech.f@ex.ex",
+      "IsAdmin": false,
+      "Name": "Wojciech",
+      "Surname": "Fr\u0105cz"
+    },
+    {
+      "Email": "ala.makota@ex.ex",
+      "IsAdmin": false,
+      "Name": "Ala",
+      "Surname": "Makota"
+    },
+    {
+      "Email": "malgorzata.zr@example.ex",
+      "IsAdmin": false,
+      "Name": "Ma\u0142gorzata",
+      "Surname": "\u017babi\u0144ska-Rakoczy"
+    },
+    {
+      "Email": "drugi.admin@example.ex",
+      "IsAdmin": true,
+      "Name": "Admin",
+      "Surname": "Drugalski"
+    }
+  ]
+}
