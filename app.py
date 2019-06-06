@@ -287,6 +287,7 @@ def import_pools():
 
 
 @app.route("/reservations", methods=["GET"])
+@login_required
 def show_reservations():
     if "startDate" not in request.args:
         return '"Start Date" not provided in request', 400
@@ -312,6 +313,7 @@ def show_reservations():
 
 
 @app.route("/reservations/cancel", methods=["POST"])
+@login_required
 def cancel_reservation():
     if not request.json:
         return "Cancel data not provided", 400
@@ -366,6 +368,7 @@ def cancel_reservation():
 
 
 @app.route("/reservations/create", methods=["POST"])
+@login_required
 def create_reservation():
     if not request.json:
         return "Create data not provided", 400
@@ -393,6 +396,7 @@ def create_reservation():
 
 
 @app.route("/reservations/edit", methods=["POST"])
+@login_required
 def edit_reservation():
     if not request.json:
         return "Create data not provided", 400
