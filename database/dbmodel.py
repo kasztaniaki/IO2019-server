@@ -467,7 +467,6 @@ class Reservation(db.Model):
                 Reservation.EndDate < end_date
             ).with_entities(Reservation.ID).all()
 
-        print(query)
         for reservation_id in query:
             reservation = Reservation.get_reservation(reservation_id[0])
             reservation_list.append(reservation)
@@ -500,7 +499,6 @@ class Reservation(db.Model):
                         and reservation.StartDate.time() == self.StartDate.time() \
                         and reservation.EndDate.weekday() == self.EndDate.weekday() \
                         and reservation.EndDate.time() == self.EndDate.time():
-                    print("ID:" + str(reservation.ID))
                     reservation_list.append(reservation)
         elif User and Pool and series_type == 'all':
             reservation_list = Reservation.query.filter(
@@ -535,7 +533,6 @@ class Reservation(db.Model):
             raise ValueError('Reservation must take place in future')
 
         available_machines = self.Pool.available_machines(start_date, end_date)
-        print(available_machines)
 
         if (start_date <= self.StartDate <= end_date) or (start_date <= self.EndDate <= end_date):
             machines_to_reserve = machine_count - self.MachineCount
