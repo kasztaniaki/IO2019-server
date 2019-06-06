@@ -121,14 +121,24 @@ def remove_user():
         return "User remove data not provided", 400
 
     user_email = request.json['email']
-    password = request.json.get['password']
+    password = request.json['password']
+    token = request.headers['Auth-Token']
 
     try:
-        user = User.get_user_by_email(user_email)
-        if user.check_password(password):
-            user.remove()
+        if password:
+            user = User.get_user_by_email(user_email)
+            if user.check_password(password):
+                user.remove()
+            else:
+                return "Wrong password for user with email: {}".format(user_email), 402
         else:
-            return "Wrong password for user with email: {}".format(user_email), 402
+            data = jwt.decode(token, app.config['SECRET_KEY'], algorithm='HS256')
+            user = User.get_user_by_email(data['email'])
+            if user.IsAdmin:
+                User.get_user_by_email(user_email).remove()
+            else:
+                return "No admin privileges", 401
+
     except Exception as e:
         print(e)
         return "User with email: {} doesn't exist!".format(user_email), 404
