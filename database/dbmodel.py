@@ -87,7 +87,7 @@ class Pool(db.Model):
         name = name if name else self.Name
         max_count = max_count if max_count else self.MaximumCount
         description = description if description else self.Description
-        enabled = enabled if enabled else self.Enabled
+        enabled = enabled if type(enabled) is not None else self.Enabled
 
         try:
             self.ID = new_id
