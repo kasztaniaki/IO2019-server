@@ -25,7 +25,7 @@ def login_required(f):
             return f(*args, **kwargs)
         except Exception as e:
             print(e)
-            return jsonify({'error': 'not logged'}), 401
+            return "Unauthorized", 401
 
     return wrapper
 
@@ -56,7 +56,7 @@ def get_token():
         return jsonify({'UserData': User.json(user), 'Token': token.decode('utf-8')})
 
     else:
-        Response('Invalid credentials provided', 401, mimetype='application/json')
+        return 'Invalid credentials provided', 401
 
 
 @app.route("/users/signup", methods=["GET", "POST"])
