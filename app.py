@@ -8,10 +8,14 @@ from functools import wraps
 from flask import jsonify, request, redirect, Response
 from datetime import datetime as dt
 
-from settings import app
+from settings import *
 from parser.csvparser import Parser
 import database.mock_db as mock_db
-from database.dbmodel import Pool, db, Software, OperatingSystem, User, Reservation
+from database.dbmodel import Pool, db, Software, OperatingSystem, Reservation, User
+from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
+from flask_login import login_user, current_user, logout_user, login_required
+from flask_mail import Message
+from flask import render_template, url_for, flash, redirect, request, abort
 
 date_conversion_format = "%Y-%m-%dT%H:%M:%S.%fZ"
 
@@ -30,8 +34,99 @@ def login_required(f):
     return wrapper
 
 
+@app.route("/init", methods=['GET', 'POST'])
+def init():
+    User.add_user('iisg.vmmanager@gmail.com','Alamakota123', 'Admin', 'Admina', True)
+    User.add_user('myalltoys@gmail.com', 'alamakota123', 'User', 'User')
+    return "init"
+
+@app.route("/test", methods=['GET', 'POST'])
+def test():
+    token = User.get_reset_token('myalltoys@gmail.com')
+    result = User.verify_reset_token(token)
+    send_reset_email('myalltoys@gmail.com', token)
+
+    return str(result)#str(User.verify_reset_token(token))
+
+@app.route("/send", methods=['GET', 'POST'])
+def send():
+    data = request.get_json(force=True)
+    email = str(data['email'])
+    token = User.get_reset_token('myalltoys@gmail.com')
+    result = User.verify_reset_token(token)
+    send_reset_email('myalltoys@gmail.com', token)
+
+    return jsonify({'test': email})
+
+def send_reset_email(user, token):
+    #token = User.get_reset_token('myalltoys@gmail.com')
+    msg = Message('Password Reset Request',
+                  sender='iisg.vmmanager@gmail.com',
+                  recipients=[user])
+    msg.body = f'''To reset your password, visit the following link:
+{url_for('test', token=token, _external=True)}
+
+If you did not make this request then simply ignore this email and no changes will be made.
+'''
+    mail.send(msg)
+
+
+
+# chce zmienic haslo
+@app.route("/reset_password", methods=['GET', 'POST'])
+def reset_request():
+    data = request.get_json(force=True)
+    email = str(data['email'])
+
+    # create token
+    token = User.get_reset_token(email)
+    #send token to user
+    send_reset_email(email, token)
+
+    # if current_user.is_authenticated:
+    #     return redirect(url_for('home'))
+    # form = RequestResetForm()
+    # if form.validate_on_submit():
+    #     user = User.query.filter_by(email=form.email.data).first()
+    #     send_reset_email(user)
+    #     flash('An email has been sent with instructions to reset your password.', 'info')
+    #     return redirect(url_for('login'))
+    # return render_template('reset_request.html', title='Reset Password', form=form)
+
+@app.route("/reset_password/<token>", methods=['GET', 'POST'])
+def reset_token(token):
+    data = request.get_json(force=True)
+    email = str(data['email'])
+    token = str(data['token'])
+    password = str(data['password'])
+    #if ok return email from token
+    result = User.verify_reset_token(token)
+
+    if result:
+        user = User.get_user_by_email(email)
+        user.set_password(password)
+
+
+    # if current_user.is_authenticated:
+    #     return redirect(url_for('home'))
+    # user = User.verify_reset_token(token)
+    # if user is None:
+    #     flash('That is an invalid or expired token', 'warning')
+    #     return redirect(url_for('reset_request'))
+    # form = ResetPasswordForm()
+    # if form.validate_on_submit():
+    #     hashed_password = bcrypt.generate_password_hash(form.password.data).decode('utf-8')
+    #     user.password = hashed_password
+    #     db.session.commit()
+    #     flash('Your password has been updated! You are now able to log in', 'success')
+    #     return redirect(url_for('login'))
+    # return render_template('reset_token.html', title='Reset Password', form=form)
+
+
 @app.route("/")
 def world():
+    #User.add_user('iisg.vmmanager@gmail.com', 'Alamakota123', 'Admin', 'Admin')
+    User.add_user('myalltoys@gmail.com', 'Alamakota123', 'Admin', 'Admin')
     return "W!"
 
 
