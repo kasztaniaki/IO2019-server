@@ -4,7 +4,8 @@ import string
 import random
 import datetime
 
-from database.dbmodel import Pool, db, Software, OperatingSystem, User, SoftwareList, Reservation
+from database.dbmodel import Pool, db, Software, OperatingSystem, SoftwareList, Reservation, User
+
 
 MOCK_DATA_PATH = './database/mock_data'
 

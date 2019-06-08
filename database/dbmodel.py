@@ -3,8 +3,175 @@ from sqlalchemy import orm, exc as sa_exc
 import json
 from settings import app
 from datetime import datetime as date
-
+from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 db = SQLAlchemy(app)
+
+
+class User(db.Model):
+    __tablename__ = "User"
+
+    ID = db.Column(db.Integer, primary_key=True)
+    Email = db.Column(db.String(80), nullable=False, unique=True)
+    Password = db.Column(db.String(80))
+    Name = db.Column(db.String(80))
+    Surname = db.Column(db.String(80))
+    IsAdmin = db.Column(db.Boolean)
+
+    @staticmethod
+    def get_reset_token(email, expires_sec=1800):
+        s = Serializer(app.config['SECRET_KEY'], expires_sec)
+        return s.dumps({'user_email': email}).decode('utf-8')
+
+    @staticmethod
+    def verify_reset_token(token):
+        s = Serializer(app.config['SECRET_KEY'])
+        try:
+            user_email = s.loads(token)['user_email']
+        except:
+            return None
+        return User.get_user_by_email(user_email)
+
+
+    @staticmethod
+    def get_table():
+        return [User.json(user) for user in User.query.all()]
+
+    @staticmethod
+    def get_user(user_id):
+        user = User.query.filter(User.ID == user_id).first()
+        if user:
+            return user
+        else:
+            raise ValueError('User of ID "{}" does not exist'.format(str(user_id)))
+
+    @staticmethod
+    def get_user_by_email(email):
+        user = User.query.filter(User.Email == email).first()
+        if user:
+            return user
+        else:
+            raise ValueError('User of email "{}" does not exist'.format(str(email)))
+
+    @staticmethod
+    def add_user(email, password, name, surname, is_admin=False):
+        try:
+            user = User(
+                Email=email,
+                Password=password,
+                Name=name,
+                Surname=surname,
+                IsAdmin=is_admin,
+            )
+            db.session.add(user)
+            db.session.commit()
+
+            return user
+        except sa_exc.IntegrityError:
+            raise ValueError("User with email '{}' already exist".format(email))
+
+    def remove(self):
+        try:
+            reservation_list = self.get_reservations(start_date=date.now())
+            for reservation in reservation_list:
+                reservation.Cancelled = True
+                db.session.commit()
+        except orm.exc.UnmappedInstanceError:
+            print("User of ID:'" + self.ID + "' has no future reservations")
+
+        try:
+            reservation_list = Reservation.query.filter(Reservation.UserID == self.ID).all()
+            for reservation in reservation_list:
+                reservation.UserID = ''
+                db.session.commit()
+        except orm.exc.UnmappedInstanceError:
+            print("User of ID:'" + self.ID + "' has no reservations")
+            raise ValueError
+
+        db.session.delete(self)
+        db.session.commit()
+
+    def set_email(self, email):
+        if email != self.Email:
+            try:
+                self.Email = email
+                db.session.commit()
+            except sa_exc.IntegrityError:
+                print("Email: '" + self.Email + "' already exists in database")
+
+    def set_password(self, password):
+        if password != self.Password:
+            self.Password = password
+            db.session.commit()
+
+    def set_name(self, name):
+        if name != self.Name:
+            self.Name = name
+            db.session.commit()
+
+    def set_surname(self, surname):
+        if surname != self.Surname:
+            self.Surname = surname
+            db.session.commit()
+
+    def set_admin_permissions(self, is_admin):
+        if self.IsAdmin != is_admin:
+            self.IsAdmin = is_admin
+            db.session.commit()
+
+    def give_admin_permissions(self):
+        if self.IsAdmin is True:
+            print("User: '" + self.ID + "' already is an admin")
+        else:
+            self.IsAdmin = True
+            db.session.commit()
+
+    def remove_admin_permissions(self):
+        if self.IsAdmin is False:
+            print("User: '" + self.ID + "' isn't admin")
+        else:
+            self.IsAdmin = False
+            db.session.commit()
+
+    def check_password(self, password):
+        if self.Password == password:
+            return True
+        else:
+            return False
+
+    def get_reservations(self, start_date=date(2019, 1, 1), end_date=date(2099, 12, 31), show_cancelled=False):
+        if show_cancelled is True:
+            return Reservation.query.filter(
+                Reservation.UserID == self.ID,
+                Reservation.StartDate > start_date,
+                Reservation.EndDate < end_date
+            ).with_entities(Reservation.ID).all()
+        else:
+            return Reservation.query.filter(
+                Reservation.UserID == self.ID,
+                Reservation.StartDate > start_date,
+                Reservation.EndDate < end_date,
+                Reservation.Cancelled is not True
+            ).all()
+
+    def json(self):
+        return {
+            "Email": self.Email,
+            "Name": self.Name,
+            "Surname": self.Surname,
+            "IsAdmin": self.IsAdmin
+        }
+
+    def __repr__(self):
+        user_object = {
+            "ID": self.ID,
+            "Email": self.Email,
+            "Name": self.Name,
+            "Surname": self.Surname,
+            "IsAdmin": self.IsAdmin
+        }
+        return json.dumps(user_object)
+
+
 
 
 class SoftwareList(db.Model):
@@ -277,156 +444,6 @@ class Pool(db.Model):
             "MaximumCount": self.MaximumCount,
         }
         return json.dumps(pool_object)
-
-
-class User(db.Model):
-    __tablename__ = "User"
-
-    ID = db.Column(db.Integer, primary_key=True)
-    Email = db.Column(db.String(80), nullable=False, unique=True)
-    Password = db.Column(db.String(80))
-    Name = db.Column(db.String(80))
-    Surname = db.Column(db.String(80))
-    IsAdmin = db.Column(db.Boolean)
-
-    @staticmethod
-    def get_table():
-        return [User.json(user) for user in User.query.all()]
-
-    @staticmethod
-    def get_user(user_id):
-        user = User.query.filter(User.ID == user_id).first()
-        if user:
-            return user
-        else:
-            raise ValueError('User of ID "{}" does not exist'.format(str(user_id)))
-
-    @staticmethod
-    def get_user_by_email(email):
-        user = User.query.filter(User.Email == email).first()
-        if user:
-            return user
-        else:
-            raise ValueError('User of email "{}" does not exist'.format(str(email)))
-    
-    @staticmethod
-    def add_user(email, password, name, surname, is_admin=False):
-        try:
-            user = User(
-                Email=email,
-                Password=password,
-                Name=name,
-                Surname=surname,
-                IsAdmin=is_admin,
-            )
-            db.session.add(user)
-            db.session.commit()
-
-            return user
-        except sa_exc.IntegrityError:
-            raise ValueError("User with email '{}' already exist".format(email))
-
-    def remove(self):
-        try:
-            reservation_list = self.get_reservations(start_date=date.now())
-            for reservation in reservation_list:
-                reservation.Cancelled = True
-                db.session.commit()
-        except orm.exc.UnmappedInstanceError:
-            print("User of ID:'" + self.ID + "' has no future reservations")
-
-        try:
-            reservation_list = Reservation.query.filter(Reservation.UserID == self.ID).all()
-            for reservation in reservation_list:
-                reservation.UserID = ''
-                db.session.commit()
-        except orm.exc.UnmappedInstanceError:
-            print("User of ID:'" + self.ID + "' has no reservations")
-            raise ValueError
-
-        db.session.delete(self)
-        db.session.commit()
-
-    def set_email(self, email):
-        if email != self.Email:
-            try:
-                self.Email = email
-                db.session.commit()
-            except sa_exc.IntegrityError:
-                print("Email: '" + self.Email + "' already exists in database")
-
-    def set_password(self, password):
-        if password != self.Password:
-            self.Password = password
-            db.session.commit()
-
-    def set_name(self, name):
-        if name != self.Name:
-            self.Name = name
-            db.session.commit()
-
-    def set_surname(self, surname):
-        if surname != self.Surname:
-            self.Surname = surname
-            db.session.commit()
-
-    def set_admin_permissions(self, is_admin):
-        if self.IsAdmin != is_admin:
-            self.IsAdmin = is_admin
-            db.session.commit()
-
-    def give_admin_permissions(self):
-        if self.IsAdmin is True:
-            print("User: '" + self.ID + "' already is an admin")
-        else:
-            self.IsAdmin = True
-            db.session.commit()
-
-    def remove_admin_permissions(self):
-        if self.IsAdmin is False:
-            print("User: '" + self.ID + "' isn't admin")
-        else:
-            self.IsAdmin = False
-            db.session.commit()
-
-    def check_password(self, password):
-        if self.Password == password:
-            return True
-        else:
-            return False
-
-    def get_reservations(self, start_date=date(2019, 1, 1), end_date=date(2099, 12, 31), show_cancelled=False):
-        if show_cancelled is True:
-            return Reservation.query.filter(
-                Reservation.UserID == self.ID,
-                Reservation.StartDate > start_date,
-                Reservation.EndDate < end_date
-            ).with_entities(Reservation.ID).all()
-        else:
-            return Reservation.query.filter(
-                Reservation.UserID == self.ID,
-                Reservation.StartDate > start_date,
-                Reservation.EndDate < end_date,
-                Reservation.Cancelled is not True
-            ).all()
-
-    def json(self):
-        return {
-            "Email": self.Email,
-            "Name": self.Name,
-            "Surname": self.Surname,
-            "IsAdmin": self.IsAdmin
-        }
-
-    def __repr__(self):
-        user_object = {
-            "ID": self.ID,
-            "Email": self.Email,
-            "Name": self.Name,
-            "Surname": self.Surname,
-            "IsAdmin": self.IsAdmin
-        }
-        return json.dumps(user_object)
 
 
 class Reservation(db.Model):
