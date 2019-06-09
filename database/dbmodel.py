@@ -212,27 +212,19 @@ class Pool(db.Model):
             raise ValueError("Reservation of pool nr: " + self.ID + " cannot be added")
 
     def get_reservations(self, start_date=date(2019, 1, 1), end_date=date(2099, 12, 31), show_cancelled=False):
-        reservation_list = []
-
         if show_cancelled is True:
-            query = Reservation.query.filter(
-                Reservation.PoolID == self.ID,
-                Reservation.StartDate > start_date,
-                Reservation.EndDate < end_date
-            ).with_entities(Reservation.ID).all()
+            return Reservation.query.filter(
+                Reservation.UserID == self.ID,
+                Reservation.StartDate >= start_date,
+                Reservation.EndDate <= end_date
+            ).all()
         else:
-            query = Reservation.query.filter(
-                Reservation.PoolID == self.ID,
-                Reservation.StartDate > start_date,
-                Reservation.EndDate < end_date,
+            return Reservation.query.filter(
+                Reservation.UserID == self.ID,
+                Reservation.StartDate >= start_date,
+                Reservation.EndDate <= end_date,
                 Reservation.Cancelled is not True
-            ).with_entities(Reservation.ID).all()
-
-        for reservation_id in query:
-            reservation = Reservation.get_reservation(reservation_id[0])
-            reservation_list.append(reservation)
-
-        return reservation_list
+            ).all()
 
     def available_machines(self, start_date, end_date):
         if self.Enabled is False:
