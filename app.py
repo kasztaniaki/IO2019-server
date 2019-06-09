@@ -5,7 +5,7 @@ import types
 import datetime
 
 from functools import wraps
-from flask import jsonify, request, redirect, Response
+from flask import jsonify, request, redirect
 from datetime import datetime as dt
 
 from settings import app
@@ -32,6 +32,12 @@ def login_required(f):
             return "Unauthorized", 401
 
     return wrapper
+
+
+def get_user_identity():
+    token = request.headers['Auth-Token']
+    data = jwt.decode(token, app.config['SECRET_KEY'], algorithm='HS256')
+    return User.get_user_by_email(data['email'])
 
 
 @app.route("/")
@@ -187,6 +193,27 @@ def get_pool():
         return "Pool of ID {} doesn't exist".format(pool_id), 404
 
 
+@app.route("/pool_availability", methods=["GET"])
+@login_required
+def get_pool_availability():
+    if "id" not in request.args:
+        return "Pool ID not provided in request", 400
+    if "startDate" not in request.args:
+        return '"Start Date" not provided in request', 400
+    if "endDate" not in request.args:
+        return '"End Date" not provided in request', 400
+    pool_id = request.args.get('id')
+    start_date = dt.strptime(request.args.get("startDate"), date_conversion_format)
+    end_date = dt.strptime(request.args.get("endDate"), date_conversion_format)
+    try:
+        pool = Pool.get_pool(pool_id)
+        reservations = pool.get_reservations(start_date, end_date)
+        available_number = pool.MaximumCount - sum([r.MachineCount for r in reservations])
+        return jsonify({"availability": available_number})
+    except AttributeError:
+        return "Pool of ID {} doesn't exist".format(pool_id), 404
+
+
 @app.route("/add_pool", methods=["POST"])
 @login_required
 def add_pool():
@@ -228,12 +255,12 @@ def edit_pool():
     try:
         pool = Pool.get_pool(pool_id)
         pool.edit_pool(
-                      request.json['ID'],
-                      request.json['Name'],
-                      request.json.get('MaximumCount', ''),
-                      request.json.get('Description', ''),
-                      request.json.get('Enabled', False)
-                      )
+            request.json['ID'],
+            request.json['Name'],
+            request.json.get('MaximumCount', ''),
+            request.json.get('Description', ''),
+            request.json.get('Enabled', False)
+        )
         pool.edit_software(request.json.get('InstalledSoftware', []))
 
         operating_system = request.json.get('OSName', '')
