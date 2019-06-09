@@ -3,6 +3,7 @@ from sqlalchemy import orm, exc as sa_exc
 import json
 from settings import app
 from datetime import datetime as date
+from passlib.hash import pbkdf2_sha256
 
 db = SQLAlchemy(app)
 
@@ -312,9 +313,10 @@ class User(db.Model):
     @staticmethod
     def add_user(email, password, name, surname, is_admin=False):
         try:
+            pass_hash = pbkdf2_sha256.hash(password)
             user = User(
                 Email=email,
-                Password=password,
+                Password=pass_hash,
                 Name=name,
                 Surname=surname,
                 IsAdmin=is_admin,
@@ -390,10 +392,7 @@ class User(db.Model):
             db.session.commit()
 
     def check_password(self, password):
-        if self.Password == password:
-            return True
-        else:
-            return False
+        return pbkdf2_sha256.verify(password, self.Password)
 
     def get_reservations(self, start_date=date(2019, 1, 1), end_date=date(2099, 12, 31), show_cancelled=False):
         if show_cancelled is True:

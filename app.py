@@ -21,7 +21,11 @@ def login_required(f):
     def wrapper(*args, **kwargs):
         token = request.headers['Auth-Token']
         try:
-            jwt.decode(token, app.config['SECRET_KEY'], algorithm='HS256')
+            data = jwt.decode(token, app.config['SECRET_KEY'], algorithm='HS256')
+            if datetime.datetime.fromtimestamp(data['exp']) < datetime.datetime.utcnow():
+                return "Token expired", 401
+            if User.get_user_by_email(data['email']) is None:
+                return "Token invalid", 401
             return f(*args, **kwargs)
         except Exception as e:
             print(e)
