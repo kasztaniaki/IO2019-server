@@ -44,7 +44,7 @@ def pools_bottleneck(start_date=dt.now(), end_date=(dt.now()+timedelta(days=7)),
         while (end_date - date).total_seconds() > 0:
             machine_usage = 1 - pool.available_machines(date, date+timedelta(seconds=(interval-1))) / pool.MaximumCount
             if machine_usage > bottleneck:
-                bottleneck_time = bottleneck_time + interval/3600
+                bottleneck_time += interval/3600
 
             date = date + timedelta(seconds=interval)
 

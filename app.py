@@ -5,14 +5,14 @@ import types
 import datetime
 
 from functools import wraps
-from flask import jsonify, request, redirect, Response
+from flask import jsonify, request, redirect
 from datetime import datetime as dt
 
 from settings import app
 from parser.csvparser import Parser
 import database.mock_db as mock_db
 from database.dbmodel import Pool, db, Software, OperatingSystem, User, Reservation
-from statistics import statistics as stats
+from statistics.statistics import most_reserved_pools, top_bottlenecked_pools, most_reserving_users, top_unused_pools
 
 date_conversion_format = "%Y-%m-%dT%H:%M:%S.%fZ"
 
@@ -229,12 +229,12 @@ def edit_pool():
     try:
         pool = Pool.get_pool(pool_id)
         pool.edit_pool(
-                      request.json['ID'],
-                      request.json['Name'],
-                      request.json.get('MaximumCount', ''),
-                      request.json.get('Description', ''),
-                      request.json.get('Enabled', False)
-                      )
+            request.json['ID'],
+            request.json['Name'],
+            request.json.get('MaximumCount', ''),
+            request.json.get('Description', ''),
+            request.json.get('Enabled', False)
+        )
         pool.edit_software(request.json.get('InstalledSoftware', []))
 
         operating_system = request.json.get('OSName', '')
@@ -310,7 +310,7 @@ def show_reservations():
         start_date = dt.strptime(request.args.get("startDate"), date_conversion_format)
         end_date = dt.strptime(request.args.get("endDate"), date_conversion_format)
     except ValueError:
-        return 'Inappropriate data value', 400
+        return 'Inappropriate date value', 400
 
     reservation_list = Reservation.get_reservations(start_date, end_date, show_cancelled)
     reservation_json_list = ([Reservation.json(reservation) for reservation in reservation_list])
@@ -426,6 +426,113 @@ def edit_reservation():
         return str(e), 400
 
     return "Reservations of ID {} successfully edited".format(str(reservation.ID)), 200
+
+
+@app.route("/statistics/popular_pools", methods=["GET"])
+@login_required
+def get_popular_pools():
+    if "startDate" not in request.args:
+        return '"Start Date" not provided in request', 400
+    if "endDate" not in request.args:
+        return '"End Date" not provided in request', 400
+    if "poolsToView" not in request.args:
+        return '"Pools to view" not provided in request', 400
+
+    pools_to_view = int(request.args.get("poolsToView"))
+    try:
+        start_date = dt.strptime(request.args.get("startDate"), date_conversion_format)
+        end_date = dt.strptime(request.args.get("endDate"), date_conversion_format)
+    except ValueError:
+        return 'Inappropriate date value', 400
+
+    pools = sorted(most_reserved_pools(start_date, end_date), key=lambda x: x[1], reverse=True)[:pools_to_view]
+
+    return jsonify({
+        "data": [p[1] for p in pools],
+        "pools": [({"id": p[0], "name": Pool.get_pool(p[0]).Name}) for p in pools]
+    })
+
+
+@app.route("/statistics/bottlenecked_pools", methods=["GET"])
+@login_required
+def get_bottlenecked_pools():
+    if "startDate" not in request.args:
+        return '"Start Date" not provided in request', 400
+    if "endDate" not in request.args:
+        return '"End Date" not provided in request', 400
+    if "poolsToView" not in request.args:
+        return '"Pools to view" not provided in request', 400
+    if "threshold" not in request.args:
+        return '"Threshold" not provided in request', 400
+
+    pools_to_view = int(request.args.get("poolsToView"))
+    threshold = float(request.args.get("threshold"))
+    try:
+        start_date = dt.strptime(request.args.get("startDate"), date_conversion_format)
+        end_date = dt.strptime(request.args.get("endDate"), date_conversion_format)
+    except ValueError:
+        return 'Inappropriate date value', 400
+
+    pools = sorted(top_bottlenecked_pools(start_date, end_date, threshold), key=lambda x: x[1], reverse=True)[
+            :pools_to_view]
+
+    return jsonify({
+        "data": [p[1] for p in pools],
+        "pools": [({"id": p[0], "name": Pool.get_pool(p[0]).Name}) for p in pools]
+    })
+
+
+@app.route("/statistics/popular_users", methods=["GET"])
+@login_required
+def get_popular_users():
+    if "startDate" not in request.args:
+        return '"Start Date" not provided in request', 400
+    if "endDate" not in request.args:
+        return '"End Date" not provided in request', 400
+    if "usersToView" not in request.args:
+        return '"Users to view" not provided in request', 400
+
+    users_to_view = int(request.args.get("usersToView"))
+    try:
+        start_date = dt.strptime(request.args.get("startDate"), date_conversion_format)
+        end_date = dt.strptime(request.args.get("endDate"), date_conversion_format)
+    except ValueError:
+        return 'Inappropriate date value', 400
+
+    users = sorted(most_reserving_users(start_date, end_date), key=lambda x: x[1], reverse=True)[
+            :users_to_view]
+
+    return jsonify({
+        "data": [u[1] for u in users],
+        "users": [({"Email": u[0], "Name": User.get_user_by_email(u[0]).Name,
+                    "Surname": User.get_user_by_email(u[0]).Surname}) for u in users]
+    })
+
+
+@app.route("/statistics/unused_pools", methods=["GET"])
+@login_required
+def get_unused_pools():
+    if "startDate" not in request.args:
+        return '"Start Date" not provided in request', 400
+    if "endDate" not in request.args:
+        return '"End Date" not provided in request', 400
+    if "poolsToView" not in request.args:
+        return '"Pools to view" not provided in request', 400
+
+    pools_to_view = int(request.args.get("poolsToView"))
+    try:
+        start_date = dt.strptime(request.args.get("startDate"), date_conversion_format)
+        end_date = dt.strptime(request.args.get("endDate"), date_conversion_format)
+    except ValueError:
+        return 'Inappropriate date value', 400
+
+    pools = sorted(top_unused_pools(start_date, end_date), key=lambda x: x[1], reverse=True)[
+            :pools_to_view]
+
+    return jsonify({
+        # TODO data
+        "pools": [({"id": p, "name": Pool.get_pool(p).Name}) for p in pools]
+    })
 
 
 @app.route("/init_db")
