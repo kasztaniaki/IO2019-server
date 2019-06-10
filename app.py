@@ -12,6 +12,7 @@ from settings import app
 from parser.csvparser import Parser
 import database.mock_db as mock_db
 from database.dbmodel import Pool, db, Software, OperatingSystem, User, Reservation
+from statistics import statistics as stats
 
 date_conversion_format = "%Y-%m-%dT%H:%M:%S.%fZ"
 
@@ -358,7 +359,7 @@ def cancel_reservation():
             reservation = Reservation.get_reservation(request_res_id)
             if reservation:
                 try:
-                    reservation_list = reservation.get_series(start_date=dt(2019, 5, 21), series_type=cancellation_type)
+                    reservation_list = reservation.get_series(series_type=cancellation_type)
                 except ValueError:
                     return 'Inappropriate "type" value received', 400
 

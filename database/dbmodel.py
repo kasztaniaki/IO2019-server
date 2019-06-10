@@ -54,6 +54,12 @@ class Pool(db.Model):
 
         return pool
 
+    @staticmethod
+    def get_all_pools(only_enabled=False):
+        if only_enabled:
+            return Pool.query.filter(Pool.Enabled == True).all()
+        return Pool.query.all()
+
     def remove(self):
         try:
             software_list = SoftwareList.query.filter(SoftwareList.PoolID == self.ID).all()
@@ -242,6 +248,24 @@ class Pool(db.Model):
             taken_machines = taken_machines + machines[0]
         return self.MaximumCount - taken_machines
 
+    def get_machines_hours(self, start_date=date(2019, 1, 1), end_date=date(2099, 12, 31)):
+        machine_hours = 0
+
+        reservations_array = Reservation.query.filter(
+            Reservation.PoolID == self.ID,
+            Reservation.StartDate < end_date,
+            Reservation.EndDate > start_date,
+            Reservation.Cancelled != True
+        ).with_entities(Reservation.MachineCount, Reservation.StartDate, Reservation.EndDate).all()
+
+        for reservation in reservations_array:
+            _start_date = reservation.StartDate
+            _end_date = reservation.EndDate
+            _machine_count = reservation.MachineCount
+            machine_hours = machine_hours + (_end_date - _start_date).seconds/3600 * _machine_count
+
+        return int(machine_hours)
+
     @staticmethod
     def get_table():
         return [Pool.json(pool) for pool in Pool.query.all()]
@@ -301,7 +325,11 @@ class User(db.Model):
             return user
         else:
             raise ValueError('User of email "{}" does not exist'.format(str(email)))
-    
+
+    @staticmethod
+    def get_all_users():
+        return User.query.all()
+
     @staticmethod
     def add_user(email, password, name, surname, is_admin=False):
         try:
@@ -400,6 +428,24 @@ class User(db.Model):
                 Reservation.EndDate < end_date,
                 Reservation.Cancelled is not True
             ).all()
+
+    def get_machines_hours(self, start_date=date(2019, 1, 1), end_date=date(2099, 12, 31)):
+        machine_hours = 0
+
+        reservations_array = Reservation.query.filter(
+            Reservation.UserID == self.ID,
+            Reservation.StartDate < end_date,
+            Reservation.EndDate > start_date,
+            Reservation.Cancelled != True
+        ).with_entities(Reservation.MachineCount, Reservation.StartDate, Reservation.EndDate).all()
+
+        for reservation in reservations_array:
+            _start_date = reservation.StartDate
+            _end_date = reservation.EndDate
+            _machine_count = reservation.MachineCount
+            machine_hours = machine_hours + (_end_date - _start_date).seconds/3600 * _machine_count
+
+        return int(machine_hours)
 
     def json(self):
         return {
