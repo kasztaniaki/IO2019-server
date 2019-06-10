@@ -207,9 +207,8 @@ def get_pool_availability():
     end_date = dt.strptime(request.args.get("endDate"), date_conversion_format)
     try:
         pool = Pool.get_pool(pool_id)
-        reservations = pool.get_reservations(start_date, end_date)
-        available_number = pool.MaximumCount - sum([r.MachineCount for r in reservations])
-        return jsonify({"availability": available_number})
+        available_machines = pool.available_machines(start_date, end_date)
+        return jsonify({"availability": available_machines})
     except AttributeError:
         return "Pool of ID {} doesn't exist".format(pool_id), 404
 
