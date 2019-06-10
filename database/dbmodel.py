@@ -214,16 +214,16 @@ class Pool(db.Model):
     def get_reservations(self, start_date=date(2019, 1, 1), end_date=date(2099, 12, 31), show_cancelled=False):
         if show_cancelled is True:
             return Reservation.query.filter(
-                Reservation.UserID == self.ID,
+                Reservation.PoolID == self.ID,
                 Reservation.StartDate >= start_date,
                 Reservation.EndDate <= end_date
             ).all()
         else:
             return Reservation.query.filter(
-                Reservation.UserID == self.ID,
+                Reservation.PoolID == self.ID,
                 Reservation.StartDate >= start_date,
                 Reservation.EndDate <= end_date,
-                Reservation.Cancelled is not True
+                Reservation.Cancelled != True
             ).all()
 
     def available_machines(self, start_date, end_date):
@@ -398,7 +398,7 @@ class User(db.Model):
                 Reservation.UserID == self.ID,
                 Reservation.StartDate > start_date,
                 Reservation.EndDate < end_date,
-                Reservation.Cancelled is not True
+                Reservation.Cancelled != True
             ).all()
 
     def json(self):
@@ -482,7 +482,7 @@ class Reservation(db.Model):
                 Reservation.EndDate < end_date,
                 Reservation.PoolID == self.PoolID,
                 Reservation.UserID == self.UserID,
-                Reservation.Cancelled is not True
+                Reservation.Cancelled != True
             ).all()
 
             for reservation in query_list:
@@ -497,7 +497,7 @@ class Reservation(db.Model):
                 Reservation.EndDate < end_date,
                 Reservation.PoolID == self.PoolID,
                 Reservation.UserID == self.UserID,
-                Reservation.Cancelled is not True
+                Reservation.Cancelled != True
             ).all()
         else:
             raise ValueError("series_type must be 'series' or 'all'")
