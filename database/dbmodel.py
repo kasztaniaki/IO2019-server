@@ -418,15 +418,15 @@ class User(db.Model):
         if show_cancelled is True:
             return Reservation.query.filter(
                 Reservation.UserID == self.ID,
-                Reservation.StartDate > start_date,
-                Reservation.EndDate < end_date
+                Reservation.StartDate >= start_date,
+                Reservation.EndDate <= end_date
             ).with_entities(Reservation.ID).all()
         else:
             return Reservation.query.filter(
                 Reservation.UserID == self.ID,
-                Reservation.StartDate > start_date,
-                Reservation.EndDate < end_date,
-                Reservation.Cancelled is not True
+                Reservation.StartDate >= start_date,
+                Reservation.EndDate <= end_date,
+                Reservation.Cancelled != True
             ).all()
 
     def get_machines_hours(self, start_date=date(2019, 1, 1), end_date=date(2099, 12, 31)):
