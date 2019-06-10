@@ -445,6 +445,9 @@ def get_popular_pools():
     except ValueError:
         return 'Inappropriate date value', 400
 
+    if start_date > end_date or pools_to_view <= 0:
+        return "Invalid data provided", 400
+
     pools = sorted(most_reserved_pools(start_date, end_date), key=lambda x: x[1], reverse=True)[:pools_to_view]
 
     return jsonify({
@@ -473,6 +476,9 @@ def get_bottlenecked_pools():
     except ValueError:
         return 'Inappropriate date value', 400
 
+    if start_date > end_date or pools_to_view <= 0 or not 0 < threshold < 1:
+        return "Invalid data provided", 400
+
     pools = sorted(top_bottlenecked_pools(start_date, end_date, threshold), key=lambda x: x[1], reverse=True)[
             :pools_to_view]
 
@@ -498,6 +504,9 @@ def get_popular_users():
         end_date = dt.strptime(request.args.get("endDate"), date_conversion_format)
     except ValueError:
         return 'Inappropriate date value', 400
+
+    if start_date > end_date or users_to_view <= 0:
+        return "Invalid data provided", 400
 
     users = sorted(most_reserving_users(start_date, end_date), key=lambda x: x[1], reverse=True)[
             :users_to_view]
@@ -525,6 +534,9 @@ def get_unused_pools():
         end_date = dt.strptime(request.args.get("endDate"), date_conversion_format)
     except ValueError:
         return 'Inappropriate date value', 400
+
+    if start_date > end_date or pools_to_view <= 0:
+        return "Invalid data provided", 400
 
     pools = sorted(top_unused_pools(start_date, end_date), key=lambda x: x[1], reverse=True)[
             :pools_to_view]
