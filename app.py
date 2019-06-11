@@ -452,7 +452,11 @@ def get_popular_pools():
 
     return jsonify({
         "data": [p[1] for p in pools],
-        "pools": [({"id": p[0], "name": Pool.get_pool(p[0]).Name}) for p in pools]
+        "labels": [({
+            "display": Pool.get_pool(p[0]).Name,
+            "name": Pool.get_pool(p[0]).Name, 
+            "id": p[0]}) 
+            for p in pools]
     })
 
 
@@ -484,7 +488,11 @@ def get_bottlenecked_pools():
 
     return jsonify({
         "data": [p[1] for p in pools],
-        "pools": [({"id": p[0], "name": Pool.get_pool(p[0]).Name}) for p in pools]
+        "labels": [({
+            "display": Pool.get_pool(p[0]).Name,
+            "name": Pool.get_pool(p[0]).Name, 
+            "id": p[0]}) 
+            for p in pools]
     })
 
 
@@ -513,8 +521,13 @@ def get_popular_users():
 
     return jsonify({
         "data": [u[1] for u in users],
-        "users": [({"Email": u[0], "Name": User.get_user_by_email(u[0]).Name,
-                    "Surname": User.get_user_by_email(u[0]).Surname}) for u in users]
+        "labels": [({
+            "display": User.get_user_by_email(u[0]).Name + ' ' +
+                User.get_user_by_email(u[0]).Surname,
+            "email": u[0], 
+            "name": User.get_user_by_email(u[0]).Name,
+            "surname": User.get_user_by_email(u[0]).Surname}) 
+            for u in users]
     })
 
 
@@ -543,7 +556,11 @@ def get_unused_pools():
 
     return jsonify({
         # TODO data
-        "pools": [({"id": p, "name": Pool.get_pool(p).Name}) for p in pools]
+        "labels": [({
+            "display": Pool.get_pool(p[0]).Name,
+            "name": Pool.get_pool(p[0]).Name, 
+            "id": p[0]}) 
+            for p in pools]
     })
 
 
