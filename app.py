@@ -34,10 +34,12 @@ def login_required(f):
     return wrapper
 
 
-def get_user_identity():
-    token = request.headers['Auth-Token']
+def validate_user_rights(token, email=None):
     data = jwt.decode(token, app.config['SECRET_KEY'], algorithm='HS256')
-    return User.get_user_by_email(data['email'])
+    if User.get_user_by_email(data['email']).IsAdmin:
+        return True
+    else:
+        return email and (email == data['email'] or User.get_user_by_email(email).IsAdmin)
 
 
 @app.route("/")
@@ -96,10 +98,15 @@ def register():
 def edit_user():
     if "email" not in request.args:
         return "User ID not provided in request", 400
+
+    email = request.args.get('email')
+    token = request.headers['Auth-Token']
+    if not validate_user_rights(token, email):
+        return "Unauthorized to edit user {}".format(email), 401
+
     if not request.json:
         return "User data not provided", 400
 
-    email = request.args.get('email')
     try:
         try:
             user = User.get_user_by_email(email)
@@ -111,7 +118,7 @@ def edit_user():
         password = request.json.get('new_password', user.Password)
         user.set_password(user.Password if not password else password)
 
-        logged_user_email = jwt.decode(request.headers['Auth-Token'], app.config['SECRET_KEY'],
+        logged_user_email = jwt.decode(token, app.config['SECRET_KEY'],
                                        algorithm='HS256')['email']
         if User.get_user_by_email(logged_user_email).IsAdmin:
             user.set_email(request.json.get('new_email', user.Email))
@@ -133,6 +140,9 @@ def remove_user():
     user_email = request.json['email']
     password = request.json['password']
     token = request.headers['Auth-Token']
+
+    if not validate_user_rights(token, user_email):
+        return "Unauthorized to delete user {}".format(user_email), 401
 
     try:
         if password:
@@ -216,6 +226,10 @@ def get_pool_availability():
 @app.route("/add_pool", methods=["POST"])
 @login_required
 def add_pool():
+    token = request.headers['Auth-Token']
+    if not validate_user_rights(token):
+        return "Unauthorized to add pools", 401
+
     if not request.json:
         return "Pool data not provided", 400
     try:
@@ -245,6 +259,10 @@ def add_pool():
 @app.route("/edit_pool", methods=["POST"])
 @login_required
 def edit_pool():
+    token = request.headers['Auth-Token']
+    if not validate_user_rights(token):
+        return "Unauthorized to edit pool", 401
+
     if "id" not in request.args:
         return "Pool ID not provided in request", 400
     if not request.json:
@@ -278,6 +296,10 @@ def edit_pool():
 @app.route("/remove_pool", methods=["GET"])
 @login_required
 def remove_pool():
+    token = request.headers['Auth-Token']
+    if not validate_user_rights(token):
+        return "Unauthorized to remove pool", 401
+
     if "id" not in request.args:
         return "Pool ID not provided in request", 400
     pool_id = request.args.get('id')
@@ -293,6 +315,10 @@ def remove_pool():
 @app.route("/import", methods=["POST"])
 @login_required
 def import_pools():
+    token = request.headers['Auth-Token']
+    if not validate_user_rights(token):
+        return "Unauthorized to import pools", 401
+
     if "pools_csv" not in request.files or "force" not in request.args:
         return redirect(request.url)
 
@@ -353,6 +379,11 @@ def cancel_reservation():
         cancellation_type = request.json['Type']
     except KeyError as e:
         return "Value of {} missing in given JSON".format(e), 400
+
+    token = request.headers['Auth-Token']
+    user_email = Reservation.get_reservation(request_res_id).User.Email
+    if not validate_user_rights(token, user_email):
+        return "Unauthorized to cancel reservation", 401
 
     if cancellation_type == 'one':
         if isinstance(request_res_id, list):
@@ -440,6 +471,11 @@ def edit_reservation():
         return "Value of {} missing in given JSON".format(e), 400
     except ValueError:
         return 'Inappropriate value in json', 400
+
+    token = request.headers['Auth-Token']
+    user_email = Reservation.get_reservation(reservation_id).User.Email
+    if not validate_user_rights(token, user_email):
+        return "Unauthorized to cancel reservation", 401
 
     try:
         reservation = Reservation.get_reservation(reservation_id)
