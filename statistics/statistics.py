@@ -67,16 +67,17 @@ def top_bottlenecked_pools(start_date=dt.now(), end_date=(dt.now()+timedelta(day
     return stat_list[:5]
 
 
-def top_unused_pools(start_date=dt.now(), end_date=(dt.now()+timedelta(days=7)), max_usage=0.5):
-    stat_list = pools_bottleneck(start_date, end_date, bottleneck=max_usage)
-    unused_pools = []
-
-    for pool in stat_list:
-        if pool[1] == 0:
-            unused_pools.append(pool[0])
-
-    return unused_pools
-
-
 def take_second_element(elem):
     return elem[1]
+
+
+# returns maximum machine usage for pools in given time
+def maximum_usage(start_date=dt.now(), end_date=(dt.now()+timedelta(days=7))):
+    pool_list = Pool.get_all_pools()
+    stat_list = []
+
+    for pool in pool_list:
+        max_usage = int(pool.MaximumCount - pool.available_machines(start_date, end_date))
+        stat_list.append((pool.ID, max_usage))
+
+    return stat_list
