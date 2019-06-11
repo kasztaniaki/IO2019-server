@@ -555,7 +555,7 @@ def get_unused_pools():
             :pools_to_view]
 
     return jsonify({
-        # TODO data
+        "data": [p[1] for p in pools],
         "labels": [({
             "display": Pool.get_pool(p[0]).Name,
             "name": Pool.get_pool(p[0]).Name, 

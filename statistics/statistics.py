@@ -73,7 +73,7 @@ def top_unused_pools(start_date=dt.now(), end_date=(dt.now()+timedelta(days=7)),
 
     for pool in stat_list:
         if pool[1] == 0:
-            unused_pools.append(pool[0])
+            unused_pools.append((pool[0], 100)) # TODO: replace it with percentage
 
     return unused_pools
 
