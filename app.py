@@ -12,7 +12,8 @@ from settings import app
 from parser.csvparser import Parser
 import database.mock_db as mock_db
 from database.dbmodel import Pool, db, Software, OperatingSystem, User, Reservation
-from statistics.statistics import most_reserved_pools, top_bottlenecked_pools, most_reserving_users, top_unused_pools
+from statistics.statistics import get_most_reserved_pools, top_bottlenecked_pools, get_users_reservation_time, \
+    maximum_usage
 
 date_conversion_format = "%Y-%m-%dT%H:%M:%S.%fZ"
 
@@ -510,14 +511,14 @@ def get_popular_pools():
     if start_date > end_date or pools_to_view <= 0:
         return "Invalid data provided", 400
 
-    pools = sorted(most_reserved_pools(start_date, end_date), key=lambda x: x[1], reverse=True)[:pools_to_view]
+    pools = sorted(get_most_reserved_pools(start_date, end_date), key=lambda x: x[1], reverse=True)[:pools_to_view]
 
     return jsonify({
         "data": [p[1] for p in pools],
         "labels": [({
             "display": Pool.get_pool(p[0]).Name,
-            "name": Pool.get_pool(p[0]).Name, 
-            "id": p[0]}) 
+            "name": Pool.get_pool(p[0]).Name,
+            "id": p[0]})
             for p in pools]
     })
 
@@ -552,8 +553,8 @@ def get_bottlenecked_pools():
         "data": [p[1] for p in pools],
         "labels": [({
             "display": Pool.get_pool(p[0]).Name,
-            "name": Pool.get_pool(p[0]).Name, 
-            "id": p[0]}) 
+            "name": Pool.get_pool(p[0]).Name,
+            "id": p[0]})
             for p in pools]
     })
 
@@ -578,17 +579,17 @@ def get_popular_users():
     if start_date > end_date or users_to_view <= 0:
         return "Invalid data provided", 400
 
-    users = sorted(most_reserving_users(start_date, end_date), key=lambda x: x[1], reverse=True)[
+    users = sorted(get_users_reservation_time(start_date, end_date), key=lambda x: x[1], reverse=True)[
             :users_to_view]
 
     return jsonify({
         "data": [u[1] for u in users],
         "labels": [({
             "display": User.get_user_by_email(u[0]).Name + ' ' +
-                User.get_user_by_email(u[0]).Surname,
-            "email": u[0], 
+                       User.get_user_by_email(u[0]).Surname,
+            "email": u[0],
             "name": User.get_user_by_email(u[0]).Name,
-            "surname": User.get_user_by_email(u[0]).Surname}) 
+            "surname": User.get_user_by_email(u[0]).Surname})
             for u in users]
     })
 
@@ -613,15 +614,15 @@ def get_unused_pools():
     if start_date > end_date or pools_to_view <= 0:
         return "Invalid data provided", 400
 
-    pools = sorted(top_unused_pools(start_date, end_date), key=lambda x: x[1], reverse=True)[
+    pools = sorted(maximum_usage(start_date, end_date), key=lambda x: x[1])[
             :pools_to_view]
 
     return jsonify({
-        "data": [p[1] for p in pools],
+        "data": [p[1]/Pool.get_pool(p[0]).MaximumCount for p in pools],
         "labels": [({
             "display": Pool.get_pool(p[0]).Name,
-            "name": Pool.get_pool(p[0]).Name, 
-            "id": p[0]}) 
+            "name": Pool.get_pool(p[0]).Name,
+            "id": p[0]})
             for p in pools]
     })
 

@@ -73,7 +73,7 @@ def take_second_element(elem):
 
 # returns maximum machine usage for pools in given time
 def maximum_usage(start_date=dt.now(), end_date=(dt.now()+timedelta(days=7))):
-    pool_list = Pool.get_all_pools()
+    pool_list = Pool.get_all_pools(only_enabled=True)
     stat_list = []
 
     for pool in pool_list:
