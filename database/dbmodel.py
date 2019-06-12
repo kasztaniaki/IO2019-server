@@ -734,8 +734,13 @@ class Issue(db.Model):
             raise ValueError('Pool of ID "{}" does not exist'.format(str(issue_id)))
 
     @staticmethod
-    def get_all_issues():
-        return Reservation.query.all()
+    def get_all_issues(user_id=None):
+        if not user_id:
+            return Issue.query.all()
+        else:
+            return Issue.query.filter(
+                Issue.UserID == user_id
+            ).all()
 
     def resolve_issue(self):
         if self.Rejected:
@@ -754,8 +759,6 @@ class Issue(db.Model):
         db.session.commit()
 
     def reopen_issue(self):
-        if self.Resolved is False or self.Rejected is False:
-            raise AttributeError("Issue is open")
         self.Resolved = False
         self.Rejected = False
         db.session.commit()

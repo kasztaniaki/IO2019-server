@@ -1,0 +1,34 @@
+{
+  "issues": [
+    {
+      "Email": "michal.idzik@example.example",
+      "Message": "This pool size is to small!",
+      "PoolID": "s7n-example",
+      "Subject": "Pool size is too small"
+    },
+    {
+      "Email": "witold.rakoczy@example.ex",
+      "Message": "Invalid pool",
+      "PoolID": "s7n-example",
+      "Subject": "Login problem"
+    },
+    {
+      "Email": "witold.rakoczy@example.ex",
+      "Message": "Enable this pool, please",
+      "PoolID": "s10n-example",
+      "Subject": "Enable this pool"
+    },
+    {
+      "Email": "malgorzata.zr@example.ex",
+      "Message": "Please increase this pool size.",
+      "PoolID": "s10n-example",
+      "Subject": "Pool size issue"
+    },
+    {
+      "Email": "malgorzata.zr@example.ex",
+      "Message": "Please increase this pool size.",
+      "PoolID": "s7n-another-example",
+      "Subject": "Pool size issue"
+    }
+  ]
+}

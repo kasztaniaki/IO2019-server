@@ -4,7 +4,7 @@ import string
 import random
 import datetime
 
-from database.dbmodel import Pool, db, Software, OperatingSystem, User, SoftwareList, Reservation
+from database.dbmodel import Pool, db, Software, OperatingSystem, User, SoftwareList, Reservation, Issue
 
 MOCK_DATA_PATH = './database/mock_data'
 
@@ -29,6 +29,14 @@ def gen_mock_pools(filename):
             for name, version in pool_data['InstalledSoftware']:
                 software = Software.add_software(name)
                 pool.add_software(software, version)
+
+
+def gen_mock_issues(filename):
+    with open(os.path.join(MOCK_DATA_PATH, filename)) as json_file:
+        data = json.load(json_file)
+        for issue_data in data['issues']:
+            user_id = User.get_user_by_email(issue_data['Email']).ID
+            Issue.add_issue(issue_data['PoolID'], user_id, issue_data['Subject'], issue_data['Message'])
 
 
 def gen_mock_reservations(filename):
@@ -71,3 +79,4 @@ def gen_mock_data():
     gen_mock_pools('pools.json')
     gen_mock_users('users.json')
     gen_mock_reservations('reservations.json')
+    gen_mock_issues('issues.json')

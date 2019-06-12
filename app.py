@@ -11,7 +11,7 @@ from datetime import datetime as dt
 from settings import app
 from parser.csvparser import Parser
 import database.mock_db as mock_db
-from database.dbmodel import Pool, db, Software, OperatingSystem, User, Reservation
+from database.dbmodel import Pool, db, Software, OperatingSystem, User, Reservation, Issue
 from statistics import statistics as stats
 
 date_conversion_format = "%Y-%m-%dT%H:%M:%S.%fZ"
@@ -30,7 +30,7 @@ def login_required(f):
             return f(*args, **kwargs)
         except Exception as e:
             print(e)
-            return "Unauthorized", 401
+            return "Oops... Somethinf went wrong", 500
 
     return wrapper
 
@@ -103,7 +103,7 @@ def edit_user():
     email = request.args.get('email')
     token = request.headers['Auth-Token']
     if not validate_user_rights(token, email):
-        return "Unauthorized to edit user {}".format(email), 401
+        return "Unauthorized to edit user {}".format(email), 403
 
     if not request.json:
         return "User data not provided", 400
@@ -143,7 +143,7 @@ def remove_user():
     token = request.headers['Auth-Token']
 
     if not validate_user_rights(token, user_email):
-        return "Unauthorized to delete user {}".format(user_email), 401
+        return "Unauthorized to delete user {}".format(user_email), 403
 
     try:
         if password:
@@ -158,7 +158,7 @@ def remove_user():
             if user.IsAdmin:
                 User.get_user_by_email(user_email).remove()
             else:
-                return "No admin privileges", 401
+                return "No admin privileges", 403
 
     except Exception as e:
         print(e)
@@ -229,7 +229,7 @@ def get_pool_availability():
 def add_pool():
     token = request.headers['Auth-Token']
     if not validate_user_rights(token):
-        return "Unauthorized to add pools", 401
+        return "Unauthorized to add pools", 403
 
     if not request.json:
         return "Pool data not provided", 400
@@ -262,7 +262,7 @@ def add_pool():
 def edit_pool():
     token = request.headers['Auth-Token']
     if not validate_user_rights(token):
-        return "Unauthorized to edit pool", 401
+        return "Unauthorized to edit pool", 403
 
     if "id" not in request.args:
         return "Pool ID not provided in request", 400
@@ -299,7 +299,7 @@ def edit_pool():
 def remove_pool():
     token = request.headers['Auth-Token']
     if not validate_user_rights(token):
-        return "Unauthorized to remove pool", 401
+        return "Unauthorized to remove pool", 403
 
     if "id" not in request.args:
         return "Pool ID not provided in request", 400
@@ -318,7 +318,7 @@ def remove_pool():
 def import_pools():
     token = request.headers['Auth-Token']
     if not validate_user_rights(token):
-        return "Unauthorized to import pools", 401
+        return "Unauthorized to import pools", 403
 
     if "pools_csv" not in request.files or "force" not in request.args:
         return redirect(request.url)
@@ -384,7 +384,7 @@ def cancel_reservation():
     token = request.headers['Auth-Token']
     user_email = Reservation.get_reservation(request_res_id).User.Email
     if not validate_user_rights(token, user_email):
-        return "Unauthorized to cancel reservation", 401
+        return "Unauthorized to cancel reservation", 403
 
     if cancellation_type == 'one':
         if isinstance(request_res_id, list):
@@ -476,7 +476,7 @@ def edit_reservation():
     token = request.headers['Auth-Token']
     user_email = Reservation.get_reservation(reservation_id).User.Email
     if not validate_user_rights(token, user_email):
-        return "Unauthorized to cancel reservation", 401
+        return "Unauthorized to cancel reservation", 403
 
     try:
         reservation = Reservation.get_reservation(reservation_id)
@@ -488,6 +488,128 @@ def edit_reservation():
         return str(e), 400
 
     return "Reservations of ID {} successfully edited".format(str(reservation.ID)), 200
+
+
+@app.route("/issues/create", methods=["POST"])
+@login_required
+def create_issue():
+    if not request.json:
+        return "Create data not provided", 400
+
+    try:
+        email = request.json['Email']
+        subject = request.json['Subject']
+        message = request.json['Message']
+        pool_id = request.json['PoolID']
+    except KeyError as e:
+        return "Value of {} missing in given JSON".format(e), 400
+    except ValueError:
+        return 'Inappropriate value in json', 400
+
+    token = request.headers['Auth-Token']
+    validate_user_rights(token, email)
+
+    try:
+        user = User.get_user_by_email(email)
+    except Exception as e:
+        return str(e), 404
+
+    Issue.add_issue(pool_id, user.ID, subject, message)
+
+    return "Issue created successfully", 200
+
+
+@app.route("/issues/list", methods=["GET"])
+@login_required
+def list_issues():
+    token = request.headers['Auth-Token']
+    is_admin = validate_user_rights(token)
+
+    if not is_admin:
+        if "email" not in request.args:
+            return '"Email" not provided in request', 400
+
+        email = request.args.get('email')
+
+        try:
+            user = User.get_user_by_email(email)
+        except Exception as e:
+            return str(e), 404
+        issues = Issue.get_all_issues(user.ID)
+    else:
+        issues = Issue.get_all_issues()
+
+    return jsonify({"issues": [issue.json() for issue in issues]}), 200
+
+
+@app.route("/issues/reject", methods=["POST"])
+@login_required
+def reject_issue():
+    if "id" not in request.args:
+        return '"Issue ID" not provided in request', 400
+    id = request.args.get('id')
+    try:
+        issue = Issue.get_issue(id)
+    except Exception as e:
+        return str(e), 404
+
+    if issue.Resolved:
+        return "Could not reject issue in Resolved state", 406
+
+    token = request.headers['Auth-Token']
+    if not validate_user_rights(token, issue.User.Email):
+        return "Unauthorized to reject issue", 403
+
+    issue.reject_issue()
+
+    return "Issue rejected successfully", 200
+
+
+@app.route("/issues/resolve", methods=["POST"])
+@login_required
+def resolve_issue():
+    token = request.headers['Auth-Token']
+    if not validate_user_rights(token):
+        return "Unauthorized to resolve issue", 403
+
+    if "id" not in request.args:
+        return '"Issue ID" not provided in request', 400
+
+    id = request.args.get('id')
+
+    try:
+        issue = Issue.get_issue(id)
+    except Exception as e:
+        return str(e), 404
+
+    if issue.Rejected:
+        return "Could not resolve issue in Rejected state", 406
+
+    issue.resolve_issue()
+
+    return "Issue resolved successfully", 200
+
+
+@app.route("/issues/reopen", methods=["POST"])
+@login_required
+def reopen_issue():
+    token = request.headers['Auth-Token']
+    if not validate_user_rights(token):
+        return "Unauthorized to reopen issue", 403
+
+    if "id" not in request.args:
+        return '"Issue ID" not provided in request', 400
+
+    id = request.args.get('id')
+
+    try:
+        issue = Issue.get_issue(id)
+    except Exception as e:
+        return str(e), 404
+
+    issue.reopen_issue()
+
+    return "Issue reopened successfully", 200
 
 
 @app.route("/init_db")
