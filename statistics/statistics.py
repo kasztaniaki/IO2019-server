@@ -1,10 +1,10 @@
-from database.dbmodel import Pool, db, Software, OperatingSystem, User, Reservation
+from database.dbmodel import Pool, User
 
 from datetime import timedelta, datetime as dt
 
 
 # return list of most reserved pools with machine hours per pool: [("pool id", machine_hours)]
-def most_reserved_pools(start_date=dt(2019, 1, 1), end_date=dt(2099, 12, 31)):
+def get_most_reserved_pools(start_date=dt(2019, 1, 1), end_date=dt(2099, 12, 31)):
     pool_list = Pool.get_all_pools()
     stat_list = []
 
@@ -15,7 +15,7 @@ def most_reserved_pools(start_date=dt(2019, 1, 1), end_date=dt(2099, 12, 31)):
     return stat_list
 
 
-def most_reserving_users(start_date=dt(2019, 1, 1), end_date=dt(2099, 12, 31)):
+def get_users_reservation_time(start_date=dt(2019, 1, 1), end_date=dt(2099, 12, 31)):
     user_list = User.get_all_users()
     stat_list = []
 
@@ -27,7 +27,7 @@ def most_reserving_users(start_date=dt(2019, 1, 1), end_date=dt(2099, 12, 31)):
 
 
 # return amount of hours, when amount of available machines was below 10% of maximum count [("pool id", hours)]
-def pools_bottleneck(start_date=dt.now(), end_date=(dt.now()+timedelta(days=7)), interval=1800, bottleneck=0.9):
+def get_pools_bottleneck(start_date=dt.now(), end_date=(dt.now()+timedelta(days=7)), interval=1800, bottleneck=0.9):
     # interval in seconds
     # bottleneck is percentage
 
@@ -44,7 +44,7 @@ def pools_bottleneck(start_date=dt.now(), end_date=(dt.now()+timedelta(days=7)),
         while (end_date - date).total_seconds() > 0:
             machine_usage = 1 - pool.available_machines(date, date+timedelta(seconds=(interval-1))) / pool.MaximumCount
             if machine_usage > bottleneck:
-                bottleneck_time += interval/3600
+                bottleneck_time = bottleneck_time + interval/3600
 
             date = date + timedelta(seconds=interval)
 
@@ -54,7 +54,7 @@ def pools_bottleneck(start_date=dt.now(), end_date=(dt.now()+timedelta(days=7)),
 
 
 def top_bottlenecked_pools(start_date=dt.now(), end_date=(dt.now()+timedelta(days=7)), bottleneck=0.9):
-    stat_list = pools_bottleneck(start_date, end_date, bottleneck=bottleneck)
+    stat_list = get_pools_bottleneck(start_date, end_date, bottleneck=bottleneck)
 
     i = 0
     while i < stat_list.__len__():
@@ -67,16 +67,17 @@ def top_bottlenecked_pools(start_date=dt.now(), end_date=(dt.now()+timedelta(day
     return stat_list[:5]
 
 
-def top_unused_pools(start_date=dt.now(), end_date=(dt.now()+timedelta(days=7)), max_usage=0.5):
-    stat_list = pools_bottleneck(start_date, end_date, bottleneck=max_usage)
-    unused_pools = []
-
-    for pool in stat_list:
-        if pool[1] == 0:
-            unused_pools.append((pool[0], 100)) # TODO: replace it with percentage
-
-    return unused_pools
-
-
 def take_second_element(elem):
     return elem[1]
+
+
+# returns maximum machine usage for pools in given time
+def maximum_usage(start_date=dt.now(), end_date=(dt.now()+timedelta(days=7))):
+    pool_list = Pool.get_all_pools()
+    stat_list = []
+
+    for pool in pool_list:
+        max_usage = int(pool.MaximumCount - pool.available_machines(start_date, end_date))
+        stat_list.append((pool.ID, max_usage))
+
+    return stat_list
