@@ -448,19 +448,25 @@ def reset_request():
 
     data = request.get_json(force=True)
     email = str(data['email'])
-    user = User.get_user_by_email(email)
+
+    try:
+        user = User.get_user_by_email(email)
+    except Exception as e:
+        return "User not in DB", 402
+
     if user:
         haslo = randomString()
         try:
             user.set_password(haslo)
         except Exception as e:
-            return str(e), 403
+            return "error during changing password in DB", 403
         try:
             send_reset_email(email, haslo)
         except Exception as e:
-            return str(e), 404
-    else:
-        return "User not found in DB", 400
+            return "error during sending eail", 404
+
+        return "password changed correctly", 405
+
 
 
 @app.before_first_request
