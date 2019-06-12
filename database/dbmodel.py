@@ -395,9 +395,9 @@ class User(db.Model):
                 print("Email: '" + self.Email + "' already exists in database")
 
     def set_password(self, password):
-        if password != self.Password:
-            self.Password = password
-            db.session.commit()
+        pass_hash = pbkdf2_sha256.hash(password)
+        self.Password = pass_hash
+        db.session.commit()
 
     def set_name(self, name):
         if name != self.Name:

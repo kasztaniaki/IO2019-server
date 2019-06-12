@@ -8,11 +8,17 @@ from functools import wraps
 from flask import jsonify, request, redirect
 from datetime import datetime as dt
 
-from settings import app
+from settings import *
 from parser.csvparser import Parser
 import database.mock_db as mock_db
 from database.dbmodel import Pool, db, Software, OperatingSystem, User, Reservation
 from statistics import statistics as stats
+
+from flask_mail import Message
+from flask import redirect, request
+import random
+import string
+
 
 date_conversion_format = "%Y-%m-%dT%H:%M:%S.%fZ"
 
@@ -503,6 +509,52 @@ def init_db():
     if bool(int(os.environ.get('MOCK', 0))) or '--mock' in sys.argv:
         mock_db.gen_mock_data()
     return "Database reseted"
+
+@app.route("/init", methods=['GET', 'POST'])
+def init():
+    User.add_user('iisg.vmmanager@gmail.com','Alamakota123', 'Admin', 'Admina', True)
+    User.add_user('myalltoys@gmail.com', 'alamakota123', 'User', 'User')
+    return "init"
+
+
+def send_reset_email(user, password):
+    msg = Message('Password Reset Request',
+                  sender='iisg.vmmanager@gmail.com',
+                  recipients=[user])
+    msg.body = f'''Here is your new password: %s .
+Please change the password as soon as possible.
+''' % password
+    mail.send(msg)
+
+
+def randomString(stringLength=10):
+    """Generate a random string of fixed length """
+    letters = string.ascii_lowercase
+    return ''.join(random.choice(letters) for i in range(stringLength))
+
+@app.route("/reset_password", methods=['GET', 'POST'])
+def reset_request():
+
+    data = request.get_json(force=True)
+    email = str(data['email'])
+
+    try:
+        user = User.get_user_by_email(email)
+    except Exception as e:
+        return "User not in DB", 402
+
+    if user:
+        haslo = randomString()
+        try:
+            user.set_password(haslo)
+        except Exception as e:
+            return "error during changing password in DB", 403
+        try:
+            send_reset_email(email, haslo)
+        except Exception as e:
+            return "error during sending eail", 404
+
+        return "password changed correctly", 405
 
 
 @app.before_first_request
