@@ -679,3 +679,57 @@ class OperatingSystem(db.Model):
         else:
             print("Operating System '" + operating_system.Name + "' already exists")
         return operating_system
+
+
+class Issue(db.Model):
+    __tablename__ = "Issue"
+    ID = db.Column(db.Integer, primary_key=True)
+    PoolID = db.Column(db.Integer, db.ForeignKey("Pool.ID"))
+    UserID = db.Column(db.Integer, db.ForeignKey("User.ID"))
+    Subject = db.Column(db.String(80))
+    Message = db.Column(db.String(500))
+    Resolved = db.Column(db.Boolean)
+    Rejected = db.Column(db.Boolean)
+    Date = db.Column(db.DateTime)
+    User = db.relationship("User")
+    Pool = db.relationship("Pool")
+
+    @staticmethod
+    def add_issue(pool_id, user_id, subject, message):
+        try:
+            issue = Issue(
+                PoolID=pool_id,
+                UserID=user_id,
+                Subject=subject,
+                Message=message,
+                Resolved=False,
+                Rejected=False,
+                Date=date.now()
+            )
+            db.session.add(issue)
+            db.session.commit()
+        except sa_exc.IntegrityError:
+            raise ValueError("Issue for pool nr: " + pool_id + " cannot be added")
+
+    def resolve_issue(self):
+        if self.Rejected:
+            raise AttributeError("Issue had been already rejected")
+        if self.Resolved:
+            raise AttributeError("Issue had been already resolved")
+        self.Resolved = True
+        db.session.commit()
+
+    def reject_issue(self):
+        if self.Resolved:
+            raise AttributeError("Issue had been resolved")
+        if self.Rejected:
+            raise AttributeError("Issue had been already rejected")
+        self.Rejected = True
+        db.session.commit()
+
+    def reopen_issue(self):
+        if self.Resolved is False or self.Rejected is False:
+            raise AttributeError("Issue is open")
+        self.Resolved = False
+        self.Rejected = False
+        db.session.commit()
