@@ -77,7 +77,7 @@ def maximum_usage(start_date=dt.now(), end_date=(dt.now()+timedelta(days=7))):
     stat_list = []
 
     for pool in pool_list:
-        max_usage = int(pool.MaximumCount - pool.available_machines(start_date, end_date))
+        max_usage = int(pool.MaximumCount - pool.available_machines(start_date, end_date)) / pool.MaximumCount
         stat_list.append((pool.ID, max_usage))
 
     return stat_list
