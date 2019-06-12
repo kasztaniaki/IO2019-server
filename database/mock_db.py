@@ -43,14 +43,16 @@ def gen_mock_reservations(filename):
                 days=-today.weekday() + sd.weekday(),
                 hours=-today.hour + sd.hour - 2,
                 minutes=-today.minute + sd.minute,
-                seconds=-today.second
+                seconds=-today.second,
+                microseconds=-today.microsecond
             )
             ed = datetime.datetime.fromtimestamp(int(res_data["EndDate"]))
             end_date = today + datetime.timedelta(
                 days=-today.weekday() + ed.weekday(),
                 hours=-today.hour + ed.hour - 2,
                 minutes=-today.minute + ed.minute,
-                seconds=-today.second
+                seconds=-today.second,
+                microseconds=-today.microsecond
             )
             reservation = Reservation(
                 PoolID=pool.ID,

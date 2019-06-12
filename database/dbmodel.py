@@ -220,33 +220,50 @@ class Pool(db.Model):
     def get_reservations(self, start_date=date(2019, 1, 1), end_date=date(2099, 12, 31), show_cancelled=False):
         if show_cancelled is True:
             return Reservation.query.filter(
-                Reservation.UserID == self.ID,
+                Reservation.PoolID == self.ID,
                 Reservation.StartDate >= start_date,
                 Reservation.EndDate <= end_date
             ).all()
         else:
             return Reservation.query.filter(
-                Reservation.UserID == self.ID,
+                Reservation.PoolID == self.ID,
                 Reservation.StartDate >= start_date,
                 Reservation.EndDate <= end_date,
-                Reservation.Cancelled is not True
+                Reservation.Cancelled != True
             ).all()
 
     def available_machines(self, start_date, end_date):
         if self.Enabled is False:
             raise AttributeError("Disabled Pool has no available machines")
 
-        taken_machines_array = Reservation.query.filter(
+        reservations_array = Reservation.query.filter(
             Reservation.PoolID == self.ID,
             Reservation.StartDate < end_date,
             Reservation.EndDate > start_date,
             Reservation.Cancelled != True
-        ).with_entities(Reservation.MachineCount).all()
+        ).all()
 
+        divide_date = None
         taken_machines = 0
-        for machines in taken_machines_array:
-            taken_machines = taken_machines + machines[0]
-        return self.MaximumCount - taken_machines
+        for reservation in reservations_array:
+            taken_machines += reservation.MachineCount
+            if start_date < reservation.StartDate < end_date:
+                divide_date = reservation.StartDate
+                break
+            elif start_date < reservation.EndDate < end_date:
+                divide_date = reservation.EndDate
+                break
+
+        if divide_date:
+            left = self.available_machines(start_date, divide_date)
+            right = self.available_machines(divide_date, end_date)
+
+            if left >= right:
+                return right
+            else:
+                return left
+        else:
+            return self.MaximumCount - taken_machines
 
     def get_machines_hours(self, start_date=date(2019, 1, 1), end_date=date(2099, 12, 31)):
         machine_hours = 0
@@ -528,7 +545,7 @@ class Reservation(db.Model):
                 Reservation.EndDate < end_date,
                 Reservation.PoolID == self.PoolID,
                 Reservation.UserID == self.UserID,
-                Reservation.Cancelled is not True
+                Reservation.Cancelled != True
             ).all()
 
             for reservation in query_list:
@@ -543,7 +560,7 @@ class Reservation(db.Model):
                 Reservation.EndDate < end_date,
                 Reservation.PoolID == self.PoolID,
                 Reservation.UserID == self.UserID,
-                Reservation.Cancelled is not True
+                Reservation.Cancelled != True
             ).all()
         else:
             raise ValueError("series_type must be 'series' or 'all'")
