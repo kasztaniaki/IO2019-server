@@ -6,13 +6,12 @@ import datetime
 
 from functools import wraps
 from flask import jsonify, request, redirect
-from datetime import datetime as dt
+from datetime import datetime as dt, timedelta
 
 from settings import app
 from parser.csvparser import Parser
 import database.mock_db as mock_db
 from database.dbmodel import Pool, db, Software, OperatingSystem, User, Reservation
-from statistics import statistics as stats
 
 date_conversion_format = "%Y-%m-%dT%H:%M:%S.%fZ"
 
@@ -441,18 +440,34 @@ def create_reservation():
         start_date = dt.strptime(request.json["StartDate"], date_conversion_format)
         end_date = dt.strptime(request.json["EndDate"], date_conversion_format)
         machine_count = int(request.json['Count'])
+
+        pool = Pool.get_pool(pool_id)
+        user = User.get_user_by_email(email)
+
+        if 'CycleEndDate' in request.json and 'Step' in request.json:
+            step = int(request.json['Step'])
+            cycle_end_date = dt.strptime(request.json["CycleEndDate"], date_conversion_format)
+            failed_dates = []
+            while start_date < cycle_end_date:
+                try:
+                    pool.add_reservation(user, machine_count, start_date, end_date)
+                except Exception as e:
+                    failed_dates.append("{} to {}: {}".format(start_date, end_date, e))
+                start_date += timedelta(weeks=step)
+                end_date += timedelta(weeks=step)
+
+            if failed_dates:
+                return "Regular reservation failed on following dates:\n{}".format("\n".join(failed_dates)), 409
+            return "Regular reservation added succesfully", 200
+
+        elif pool and user:
+            reservation = pool.add_reservation(user, machine_count, start_date, end_date)
+            return jsonify({'ReservationID': reservation.ID}), 200
+
     except KeyError as e:
         return "Value of {} missing in given JSON".format(e), 400
     except ValueError:
         return 'Inappropriate value in json', 400
-
-    try:
-        pool = Pool.get_pool(pool_id)
-        user = User.get_user_by_email(email)
-
-        if pool and user:
-            reservation = pool.add_reservation(user, machine_count, start_date, end_date)
-            return jsonify({'ReservationID': reservation.ID}), 200
     except Exception as e:
         return str(e), 404
 
