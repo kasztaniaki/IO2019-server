@@ -12,7 +12,7 @@ from settings import app
 from settings import mail
 from parser.csvparser import Parser
 import database.mock_db as mock_db
-from database.dbmodel import Pool, db, Software, OperatingSystem, User, Reservation
+from database.dbmodel import Pool, db, Software, OperatingSystem, User, Reservation, Issue
 from statistics.statistics import get_most_reserved_pools, top_bottlenecked_pools, get_users_reservation_time, \
     maximum_usage
 
@@ -36,7 +36,7 @@ def login_required(f):
             return f(*args, **kwargs)
         except Exception as e:
             print(e)
-            return "Oops... Somethinf went wrong", 500
+            return "Oops... Something went wrong", 500
 
     return wrapper
 
@@ -784,7 +784,6 @@ def init_db():
     User.add_user("admin@admin.example", "ala123456", "Admin", "Admin", True)
     db.session.commit()
     if bool(int(os.environ.get('MOCK', 0))) or '--mock' in sys.argv:
-        mock_db.gen_mock_data()
         mock_db.gen_mock_data()
     return "Database reseted"
 
