@@ -381,7 +381,10 @@ def cancel_reservation():
         return "Value of {} missing in given JSON".format(e), 400
 
     token = request.headers['Auth-Token']
-    user_email = Reservation.get_reservation(request_res_id).User.Email
+    if isinstance(request_res_id, list):
+        user_email = Reservation.get_reservation(request_res_id[0]).User.Email
+    else:
+        user_email = Reservation.get_reservation(request_res_id).User.Email
     if not validate_user_rights(token, user_email):
         return "Unauthorized to cancel reservation", 401
 
@@ -444,7 +447,7 @@ def create_reservation():
         pool = Pool.get_pool(pool_id)
         user = User.get_user_by_email(email)
 
-        if 'CycleEndDate' in request.json and 'Step' in request.json:
+        if request.json['CycleEndDate'] is not None and request.json['Step'] is not None:
             step = int(request.json['Step'])
             cycle_end_date = dt.strptime(request.json["CycleEndDate"], date_conversion_format)
             failed_dates = []
