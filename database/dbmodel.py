@@ -287,6 +287,13 @@ class Pool(db.Model):
     def get_table():
         return [Pool.json(pool) for pool in Pool.query.all()]
 
+    def get_issues(self, show_resolved_issues=True, show_rejected_issues=True):
+        return Issue.query.filter(
+            Issue.PoolID == self.ID,
+            Issue.Rejected == show_rejected_issues,
+            Issue.Resolved == show_resolved_issues,
+        ).all()
+
     def json(self):
         try:
             os_name = self.get_operating_system().Name
@@ -463,6 +470,13 @@ class User(db.Model):
             machine_hours = machine_hours + (_end_date - _start_date).seconds/3600 * _machine_count
 
         return int(machine_hours)
+
+    def get_issues(self, show_resolved_issues=True, show_rejected_issues=True):
+        return Issue.query.filter(
+            Issue.UserID == self.ID,
+            Issue.Rejected == show_rejected_issues,
+            Issue.Resolved == show_resolved_issues,
+        ).all()
 
     def json(self):
         return {
@@ -679,3 +693,86 @@ class OperatingSystem(db.Model):
         else:
             print("Operating System '" + operating_system.Name + "' already exists")
         return operating_system
+
+
+class Issue(db.Model):
+    __tablename__ = "Issue"
+    ID = db.Column(db.Integer, primary_key=True)
+    PoolID = db.Column(db.Integer, db.ForeignKey("Pool.ID"))
+    UserID = db.Column(db.Integer, db.ForeignKey("User.ID"))
+    Subject = db.Column(db.String(80))
+    Message = db.Column(db.String(500))
+    Resolved = db.Column(db.Boolean)
+    Rejected = db.Column(db.Boolean)
+    Date = db.Column(db.DateTime)
+    User = db.relationship("User")
+    Pool = db.relationship("Pool")
+
+    @staticmethod
+    def add_issue(pool_id, user_id, subject, message):
+        try:
+            issue = Issue(
+                PoolID=pool_id,
+                UserID=user_id,
+                Subject=subject,
+                Message=message,
+                Resolved=False,
+                Rejected=False,
+                Date=date.now()
+            )
+            db.session.add(issue)
+            db.session.commit()
+        except sa_exc.IntegrityError:
+            raise ValueError("Issue for pool nr: " + pool_id + " cannot be added")
+
+    @staticmethod
+    def get_issue(issue_id):
+        issue = Issue.query.filter(Issue.ID == issue_id).first()
+        if issue:
+            return issue
+        else:
+            raise ValueError('Pool of ID "{}" does not exist'.format(str(issue_id)))
+
+    @staticmethod
+    def get_all_issues(user_id=None):
+        if not user_id:
+            return Issue.query.all()
+        else:
+            return Issue.query.filter(
+                Issue.UserID == user_id
+            ).all()
+
+    def resolve_issue(self):
+        if self.Rejected:
+            raise AttributeError("Issue had been already rejected")
+        if self.Resolved:
+            raise AttributeError("Issue had been already resolved")
+        self.Resolved = True
+        db.session.commit()
+
+    def reject_issue(self):
+        if self.Resolved:
+            raise AttributeError("Issue had been resolved")
+        if self.Rejected:
+            raise AttributeError("Issue had been already rejected")
+        self.Rejected = True
+        db.session.commit()
+
+    def reopen_issue(self):
+        self.Resolved = False
+        self.Rejected = False
+        db.session.commit()
+
+    def json(self):
+        conversion_format = "%Y-%m-%dT%H:%M:%S.%f"
+        return {
+            "IssueID": self.ID,
+            "UserEmail": self.User.Email if self.User else '',
+            "PoolID": self.PoolID if self.PoolID else '',
+            "PoolName": self.Pool.Name if self.Pool else '',
+            "Date": (self.Date.strftime(conversion_format))[0:23]+'Z',
+            "Subject": self.Subject if self.User else '',
+            "Message": self.Subject if self.User else '',
+            "Resolved": "true" if self.Resolved == True else "false",
+            "Rejected": "true" if self.Rejected == True else "false"
+        }
