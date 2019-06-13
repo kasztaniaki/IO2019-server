@@ -15,8 +15,6 @@ dependencies:
   - sqlalchemy>=1.3
   - flask-login
   - pyjwt
-  - gunicorn # for app deployment
+  - gunicorn
   - passlib
   - flask-mail
-
-
