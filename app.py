@@ -476,8 +476,8 @@ def create_reservation():
                     if pool.available_machines(new_start_date, new_end_date) < machine_count:
                         failed_dates.append(
                             "{} to {}: not enogh machines available.".format(new_start_date, new_end_date))
-                        new_start_date += timedelta(weeks=step)
-                        new_end_date += timedelta(weeks=step)
+                    new_start_date += timedelta(weeks=step)
+                    new_end_date += timedelta(weeks=step)
                 if not failed_dates:
                     while start_date < cycle_end_date:
                         pool.add_reservation(user, machine_count, start_date, end_date)
@@ -681,7 +681,6 @@ def init_db():
     User.add_user("admin@admin.example", "ala123456", "Admin", "Admin", True)
     db.session.commit()
     if bool(int(os.environ.get('MOCK', 0))) or '--mock' in sys.argv:
-        mock_db.gen_mock_data()
         mock_db.gen_mock_data()
     return "Database reseted"
 
