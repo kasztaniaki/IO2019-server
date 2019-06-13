@@ -6,13 +6,19 @@ import datetime
 
 from functools import wraps
 from flask import jsonify, request, redirect
-from datetime import datetime as dt
+from datetime import datetime as dt, timedelta
 
 from settings import app
+from settings import mail
 from parser.csvparser import Parser
 import database.mock_db as mock_db
-from database.dbmodel import Pool, db, Software, OperatingSystem, User, Reservation, Issue
-from statistics import statistics as stats
+from database.dbmodel import Pool, db, Software, OperatingSystem, User, Reservation
+from statistics.statistics import get_most_reserved_pools, top_bottlenecked_pools, get_users_reservation_time, \
+    maximum_usage
+
+from flask_mail import Message
+import random
+import string
 
 date_conversion_format = "%Y-%m-%dT%H:%M:%S.%fZ"
 
@@ -362,7 +368,7 @@ def show_reservations():
         start_date = dt.strptime(request.args.get("startDate"), date_conversion_format)
         end_date = dt.strptime(request.args.get("endDate"), date_conversion_format)
     except ValueError:
-        return 'Inappropriate data value', 400
+        return 'Inappropriate date value', 400
 
     reservation_list = Reservation.get_reservations(start_date, end_date, show_cancelled)
     reservation_json_list = ([Reservation.json(reservation) for reservation in reservation_list])
@@ -382,7 +388,10 @@ def cancel_reservation():
         return "Value of {} missing in given JSON".format(e), 400
 
     token = request.headers['Auth-Token']
-    user_email = Reservation.get_reservation(request_res_id).User.Email
+    if isinstance(request_res_id, list):
+        user_email = Reservation.get_reservation(request_res_id[0]).User.Email
+    else:
+        user_email = Reservation.get_reservation(request_res_id).User.Email
     if not validate_user_rights(token, user_email):
         return "Unauthorized to cancel reservation", 403
 
@@ -441,18 +450,34 @@ def create_reservation():
         start_date = dt.strptime(request.json["StartDate"], date_conversion_format)
         end_date = dt.strptime(request.json["EndDate"], date_conversion_format)
         machine_count = int(request.json['Count'])
+
+        pool = Pool.get_pool(pool_id)
+        user = User.get_user_by_email(email)
+
+        if request.json['CycleEndDate'] is not None and request.json['Step'] is not None:
+            step = int(request.json['Step'])
+            cycle_end_date = dt.strptime(request.json["CycleEndDate"], date_conversion_format)
+            failed_dates = []
+            while start_date < cycle_end_date:
+                try:
+                    pool.add_reservation(user, machine_count, start_date, end_date)
+                except Exception as e:
+                    failed_dates.append("{} to {}: {}".format(start_date, end_date, e))
+                start_date += timedelta(weeks=step)
+                end_date += timedelta(weeks=step)
+
+            if failed_dates:
+                return "Regular reservation failed on following dates:\n{}".format("\n".join(failed_dates)), 409
+            return "Regular reservation added succesfully", 200
+
+        elif pool and user:
+            reservation = pool.add_reservation(user, machine_count, start_date, end_date)
+            return jsonify({'ReservationID': reservation.ID}), 200
+
     except KeyError as e:
         return "Value of {} missing in given JSON".format(e), 400
     except ValueError:
         return 'Inappropriate value in json', 400
-
-    try:
-        pool = Pool.get_pool(pool_id)
-        user = User.get_user_by_email(email)
-
-        if pool and user:
-            reservation = pool.add_reservation(user, machine_count, start_date, end_date)
-            return jsonify({'ReservationID': reservation.ID}), 200
     except Exception as e:
         return str(e), 404
 
@@ -611,6 +636,142 @@ def reopen_issue():
 
     return "Issue reopened successfully", 200
 
+  
+@app.route("/statistics/popular_pools", methods=["GET"])
+@login_required
+def get_popular_pools():
+    if "startDate" not in request.args:
+        return '"Start Date" not provided in request', 400
+    if "endDate" not in request.args:
+        return '"End Date" not provided in request', 400
+    if "poolsToView" not in request.args:
+        return '"Pools to view" not provided in request', 400
+
+    pools_to_view = int(request.args.get("poolsToView"))
+    try:
+        start_date = dt.strptime(request.args.get("startDate"), date_conversion_format)
+        end_date = dt.strptime(request.args.get("endDate"), date_conversion_format)
+    except ValueError:
+        return 'Inappropriate date value', 400
+
+    if start_date > end_date or pools_to_view <= 0:
+        return "Invalid data provided", 400
+
+    pools = sorted(get_most_reserved_pools(start_date, end_date), key=lambda x: x[1], reverse=True)[:pools_to_view]
+
+    return jsonify({
+        "data": [p[1] for p in pools],
+        "labels": [({
+            "display": Pool.get_pool(p[0]).Name,
+            "name": Pool.get_pool(p[0]).Name,
+            "id": p[0]})
+            for p in pools]
+    })
+
+
+@app.route("/statistics/bottlenecked_pools", methods=["GET"])
+@login_required
+def get_bottlenecked_pools():
+    if "startDate" not in request.args:
+        return '"Start Date" not provided in request', 400
+    if "endDate" not in request.args:
+        return '"End Date" not provided in request', 400
+    if "poolsToView" not in request.args:
+        return '"Pools to view" not provided in request', 400
+    if "threshold" not in request.args:
+        return '"Threshold" not provided in request', 400
+
+    pools_to_view = int(request.args.get("poolsToView"))
+    threshold = float(request.args.get("threshold"))
+    try:
+        start_date = dt.strptime(request.args.get("startDate"), date_conversion_format)
+        end_date = dt.strptime(request.args.get("endDate"), date_conversion_format)
+    except ValueError:
+        return 'Inappropriate date value', 400
+
+    if start_date > end_date or pools_to_view <= 0 or not 0 < threshold < 1:
+        return "Invalid data provided", 400
+
+    pools = sorted(top_bottlenecked_pools(start_date, end_date, threshold), key=lambda x: x[1], reverse=True)[
+            :pools_to_view]
+
+    return jsonify({
+        "data": [p[1] for p in pools],
+        "labels": [({
+            "display": Pool.get_pool(p[0]).Name,
+            "name": Pool.get_pool(p[0]).Name,
+            "id": p[0]})
+            for p in pools]
+    })
+
+
+@app.route("/statistics/popular_users", methods=["GET"])
+@login_required
+def get_popular_users():
+    if "startDate" not in request.args:
+        return '"Start Date" not provided in request', 400
+    if "endDate" not in request.args:
+        return '"End Date" not provided in request', 400
+    if "usersToView" not in request.args:
+        return '"Users to view" not provided in request', 400
+
+    users_to_view = int(request.args.get("usersToView"))
+    try:
+        start_date = dt.strptime(request.args.get("startDate"), date_conversion_format)
+        end_date = dt.strptime(request.args.get("endDate"), date_conversion_format)
+    except ValueError:
+        return 'Inappropriate date value', 400
+
+    if start_date > end_date or users_to_view <= 0:
+        return "Invalid data provided", 400
+
+    users = sorted(get_users_reservation_time(start_date, end_date), key=lambda x: x[1], reverse=True)[
+            :users_to_view]
+
+    return jsonify({
+        "data": [u[1] for u in users],
+        "labels": [({
+            "display": User.get_user_by_email(u[0]).Name + ' ' +
+                       User.get_user_by_email(u[0]).Surname,
+            "email": u[0],
+            "name": User.get_user_by_email(u[0]).Name,
+            "surname": User.get_user_by_email(u[0]).Surname})
+            for u in users]
+    })
+
+
+@app.route("/statistics/unused_pools", methods=["GET"])
+@login_required
+def get_unused_pools():
+    if "startDate" not in request.args:
+        return '"Start Date" not provided in request', 400
+    if "endDate" not in request.args:
+        return '"End Date" not provided in request', 400
+    if "poolsToView" not in request.args:
+        return '"Pools to view" not provided in request', 400
+
+    pools_to_view = int(request.args.get("poolsToView"))
+    try:
+        start_date = dt.strptime(request.args.get("startDate"), date_conversion_format)
+        end_date = dt.strptime(request.args.get("endDate"), date_conversion_format)
+    except ValueError:
+        return 'Inappropriate date value', 400
+
+    if start_date > end_date or pools_to_view <= 0:
+        return "Invalid data provided", 400
+
+    pools = sorted(maximum_usage(start_date, end_date), key=lambda x: x[1])[
+            :pools_to_view]
+
+    return jsonify({
+        "data": [p[1] for p in pools],
+        "labels": [({
+            "display": Pool.get_pool(p[0]).Name,
+            "name": Pool.get_pool(p[0]).Name,
+            "id": p[0]})
+            for p in pools]
+    })
+
 
 @app.route("/init_db")
 @login_required
@@ -624,7 +785,49 @@ def init_db():
     db.session.commit()
     if bool(int(os.environ.get('MOCK', 0))) or '--mock' in sys.argv:
         mock_db.gen_mock_data()
+        mock_db.gen_mock_data()
     return "Database reseted"
+
+
+def send_reset_email(user, password):
+    msg = Message('Password Reset Request',
+                  sender='iisg.vmmanager@gmail.com',
+                  recipients=[user])
+    msg.body = f'''Here is your new password: %s .
+Please change the password as soon as possible.
+''' % password
+    mail.send(msg)
+
+
+def random_string(stringLength=10):
+    """Generate a random string of fixed length """
+    letters = string.ascii_lowercase
+    return ''.join(random.choice(letters) for i in range(stringLength))
+
+
+@app.route("/reset_password", methods=['GET', 'POST'])
+def reset_request():
+
+    data = request.get_json(force=True)
+    email = str(data['email'])
+
+    try:
+        user = User.get_user_by_email(email)
+    except Exception:
+        return "User not in DB", 402
+
+    if user:
+        password = random_string()
+        try:
+            user.set_password(password)
+        except Exception:
+            return "error during changing password in DB", 403
+        try:
+            send_reset_email(email, password)
+        except Exception:
+            return "error during sending email", 404
+
+        return "password changed correctly", 200
 
 
 @app.before_first_request
