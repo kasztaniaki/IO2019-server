@@ -40,4 +40,4 @@ wcwidth==0.1.7
 Werkzeug==0.14.1
 wrapt==1.11.1
 passlib==1.7.1
-flask-mail=0.9.1
+flask-mail==0.9.1
