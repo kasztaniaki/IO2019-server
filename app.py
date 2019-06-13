@@ -508,6 +508,7 @@ def init_db():
     db.session.commit()
     if bool(int(os.environ.get('MOCK', 0))) or '--mock' in sys.argv:
         mock_db.gen_mock_data()
+        mock_db.gen_mock_data()
     return "Database reseted"
 
 
@@ -519,13 +520,6 @@ def send_reset_email(user, password):
 Please change the password as soon as possible.
 ''' % password
     mail.send(msg)
-
-
-@app.route("/init", methods=['GET', 'POST'])
-def init():
-    User.add_user('iisg.vmmanager@gmail.com','Alamakota123', 'Admin', 'Admina', True)
-    User.add_user('myalltoys@gmail.com', 'alamakota123', 'User', 'User')
-    return "init"
 
 
 def random_string(stringLength=10):
