@@ -554,7 +554,7 @@ def reset_request():
         except Exception as e:
             return "error during sending eail", 404
 
-        return "password changed correctly", 405
+        return "password changed correctly", 201
 
 
 @app.before_first_request
