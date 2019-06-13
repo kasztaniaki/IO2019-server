@@ -772,7 +772,7 @@ class Issue(db.Model):
             "PoolName": self.Pool.Name if self.Pool else '',
             "Date": (self.Date.strftime(conversion_format))[0:23]+'Z',
             "Subject": self.Subject if self.User else '',
-            "Message": self.Subject if self.User else '',
+            "Message": self.Message if self.User else '',
             "Resolved": "true" if self.Resolved == True else "false",
             "Rejected": "true" if self.Rejected == True else "false"
         }
