@@ -8,14 +8,14 @@ from functools import wraps
 from flask import jsonify, request, redirect
 from datetime import datetime as dt
 
-from settings import *
+from settings import app
+from settings import mail
 from parser.csvparser import Parser
 import database.mock_db as mock_db
 from database.dbmodel import Pool, db, Software, OperatingSystem, User, Reservation
 from statistics import statistics as stats
 
 from flask_mail import Message
-from flask import redirect, request
 import random
 import string
 
@@ -510,12 +510,6 @@ def init_db():
         mock_db.gen_mock_data()
     return "Database reseted"
 
-@app.route("/init", methods=['GET', 'POST'])
-def init():
-    User.add_user('iisg.vmmanager@gmail.com','Alamakota123', 'Admin', 'Admina', True)
-    User.add_user('myalltoys@gmail.com', 'alamakota123', 'User', 'User')
-    return "init"
-
 
 def send_reset_email(user, password):
     msg = Message('Password Reset Request',
@@ -527,10 +521,18 @@ Please change the password as soon as possible.
     mail.send(msg)
 
 
-def randomString(stringLength=10):
+@app.route("/init", methods=['GET', 'POST'])
+def init():
+    User.add_user('iisg.vmmanager@gmail.com','Alamakota123', 'Admin', 'Admina', True)
+    User.add_user('myalltoys@gmail.com', 'alamakota123', 'User', 'User')
+    return "init"
+
+
+def random_string(stringLength=10):
     """Generate a random string of fixed length """
     letters = string.ascii_lowercase
     return ''.join(random.choice(letters) for i in range(stringLength))
+
 
 @app.route("/reset_password", methods=['GET', 'POST'])
 def reset_request():
@@ -540,21 +542,21 @@ def reset_request():
 
     try:
         user = User.get_user_by_email(email)
-    except Exception as e:
+    except Exception:
         return "User not in DB", 402
 
     if user:
-        haslo = randomString()
+        password = random_string()
         try:
-            user.set_password(haslo)
-        except Exception as e:
+            user.set_password(password)
+        except Exception:
             return "error during changing password in DB", 403
         try:
-            send_reset_email(email, haslo)
-        except Exception as e:
-            return "error during sending eail", 404
+            send_reset_email(email, password)
+        except Exception:
+            return "error during sending email", 404
 
-        return "password changed correctly", 201
+        return "password changed correctly", 200
 
 
 @app.before_first_request

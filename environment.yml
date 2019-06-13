@@ -16,4 +16,7 @@ dependencies:
   - flask-login
   - pyjwt
   - gunicorn # for app deployment
-  - passlib
+  - passlibgfhhgh
+  - flask_mail
+
+
