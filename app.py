@@ -458,16 +458,35 @@ def create_reservation():
             step = int(request.json['Step'])
             cycle_end_date = dt.strptime(request.json["CycleEndDate"], date_conversion_format)
             failed_dates = []
-            while start_date < cycle_end_date:
-                try:
-                    pool.add_reservation(user, machine_count, start_date, end_date)
-                except Exception as e:
-                    failed_dates.append("{} to {}: {}".format(start_date, end_date, e))
-                start_date += timedelta(weeks=step)
-                end_date += timedelta(weeks=step)
+
+            if request.json['Force']:
+                while start_date < cycle_end_date:
+                    try:
+                        pool.add_reservation(user, machine_count, start_date, end_date)
+                    except Exception as e:
+                        failed_dates.append("{} to {}: {}".format(start_date, end_date, e))
+                    start_date += timedelta(weeks=step)
+                    end_date += timedelta(weeks=step)
+                if failed_dates:
+                    return "Regular reservation failed on following dates:\n{}".format("\n".join(failed_dates)), 409
+            else:
+                new_start_date = start_date
+                new_end_date = end_date
+                while new_start_date < cycle_end_date:
+                    if pool.available_machines(new_start_date, new_end_date) < machine_count:
+                        failed_dates.append(
+                            "{} to {}: not enogh machines available.".format(new_start_date, new_end_date))
+                    new_start_date += timedelta(weeks=step)
+                    new_end_date += timedelta(weeks=step)
+                if not failed_dates:
+                    while start_date < cycle_end_date:
+                        pool.add_reservation(user, machine_count, start_date, end_date)
+                        start_date += timedelta(weeks=step)
+                        end_date += timedelta(weeks=step)
 
             if failed_dates:
                 return "Regular reservation failed on following dates:\n{}".format("\n".join(failed_dates)), 409
+
             return "Regular reservation added succesfully", 200
 
         elif pool and user:
@@ -806,7 +825,6 @@ def random_string(stringLength=10):
 
 @app.route("/reset_password", methods=['GET', 'POST'])
 def reset_request():
-
     data = request.get_json(force=True)
     email = str(data['email'])
 
