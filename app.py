@@ -9,10 +9,16 @@ from flask import jsonify, request, redirect
 from datetime import datetime as dt
 
 from settings import app
+from settings import mail
 from parser.csvparser import Parser
 import database.mock_db as mock_db
 from database.dbmodel import Pool, db, Software, OperatingSystem, User, Reservation
 from statistics import statistics as stats
+
+from flask_mail import Message
+import random
+import string
+
 
 date_conversion_format = "%Y-%m-%dT%H:%M:%S.%fZ"
 
@@ -502,7 +508,49 @@ def init_db():
     db.session.commit()
     if bool(int(os.environ.get('MOCK', 0))) or '--mock' in sys.argv:
         mock_db.gen_mock_data()
+        mock_db.gen_mock_data()
     return "Database reseted"
+
+
+def send_reset_email(user, password):
+    msg = Message('Password Reset Request',
+                  sender='iisg.vmmanager@gmail.com',
+                  recipients=[user])
+    msg.body = f'''Here is your new password: %s .
+Please change the password as soon as possible.
+''' % password
+    mail.send(msg)
+
+
+def random_string(stringLength=10):
+    """Generate a random string of fixed length """
+    letters = string.ascii_lowercase
+    return ''.join(random.choice(letters) for i in range(stringLength))
+
+
+@app.route("/reset_password", methods=['GET', 'POST'])
+def reset_request():
+
+    data = request.get_json(force=True)
+    email = str(data['email'])
+
+    try:
+        user = User.get_user_by_email(email)
+    except Exception:
+        return "User not in DB", 402
+
+    if user:
+        password = random_string()
+        try:
+            user.set_password(password)
+        except Exception:
+            return "error during changing password in DB", 403
+        try:
+            send_reset_email(email, password)
+        except Exception:
+            return "error during sending email", 404
+
+        return "password changed correctly", 200
 
 
 @app.before_first_request
