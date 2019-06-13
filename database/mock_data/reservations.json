@@ -69,7 +69,7 @@
       "PoolID": "s10n-ex",
       "StartDate": "1558944000",
       "EndDate": "1558949400",
-      "Count": 20,
+      "Count": 59,
       "Cancelled": false
     },
     {
@@ -77,7 +77,7 @@
       "PoolID": "s10n-ex",
       "StartDate": "1558955700",
       "EndDate": "1558961400",
-      "Count": 23,
+      "Count": 43,
       "Cancelled": false
     },
     {
@@ -157,7 +157,7 @@
       "PoolID": "s7n-example",
       "StartDate": "1559122500",
       "EndDate": "1559127900",
-      "Count": 17,
+      "Count": 29,
       "Cancelled": false
     },
     {
@@ -173,7 +173,7 @@
       "PoolID": "s10n-ex",
       "StartDate": "1559134200",
       "EndDate": "1559139600",
-      "Count": 25,
+      "Count": 59,
       "Cancelled": false
     },
     {
@@ -181,7 +181,7 @@
       "PoolID": "s7n-example",
       "StartDate": "1559134200",
       "EndDate": "1559139600",
-      "Count": 20,
+      "Count": 30,
       "Cancelled": false
     },
     {
@@ -189,7 +189,7 @@
       "PoolID": "s7n-example",
       "StartDate": "1559238600",
       "EndDate": "1559244000",
-      "Count": 25,
+      "Count": 30,
       "Cancelled": false
     },
     {
@@ -221,7 +221,7 @@
       "PoolID": "s10n-ex",
       "StartDate": "1559203200",
       "EndDate": "1559208600",
-      "Count": 15,
+      "Count": 37,
       "Cancelled": false
     },
     {
